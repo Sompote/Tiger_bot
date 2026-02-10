@@ -1,4 +1,12 @@
 node_modules/
+.venv/
 .env
+.env.*
+!.env.example
 *.log
-db/*.sqlite
+*.pid
+db/*.sqlite*
+db/*.db
+db/*.json
+logs/
+data/*.md

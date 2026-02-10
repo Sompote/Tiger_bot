@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run secret scan on staged content.
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+./scripts/scan-secrets.sh

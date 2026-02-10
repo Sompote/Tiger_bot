@@ -128,6 +128,9 @@ Tiger loads these files into system context every turn:
 - `data/human2.md`
 - `data/ownskill.md`
 
+These `data/*.md` files are **local runtime state** and are gitignored by default to avoid accidentally committing personal info.
+They are auto-created on first run if missing.
+
 Behavior summary:
 
 - `human2.md` may be appended with profile updates over time.
@@ -173,4 +176,5 @@ npm run cli
 ## Security
 
 - Do not commit `.env`.
+- Optional: enable the local git secret-scan hooks: `git config core.hooksPath .githooks`.
 - Rotate keys immediately if exposed.
