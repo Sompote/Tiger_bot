@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "skills": {
+    "duckduckgo-search": {
+      "version": "1.0.0",
+      "installedAt": 1770690040772
+    },
+    "super-websearch-realtime": {
+      "version": "1.0.0",
+      "installedAt": 1770690251886
+    }
+  }
+}
