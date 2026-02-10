@@ -10,85 +10,40 @@ From the start, Tiger combines:
 - a self-maintained `ownskill.md` summary that auto-refreshes every 24 hours
 
 Core capabilities:
-- CLI chat
-- Telegram bot mode
-- Local conversation memory
+- CLI chat mode
+- Telegram bot mode (foreground or background)
+- Local conversation memory (`db/agent.json` by default)
 - Tool calling (files, shell, skills, sub-agents)
 - ClawHub skill search/install support
 - OpenClaw-style tool loop (assistant -> tool calls -> tool results -> final synthesis)
 
 ## Requirements
 
-- Node.js 18+ (recommended: 20+)
+- Node.js 18+ (20+ recommended)
 - npm
 
-## Installation (Step by Step)
-
-1. Clone repository:
-
-```bash
-git clone <your-repo-url> tiger
-cd tiger
-```
-
-2. Install dependencies:
+## Quick Start
 
 ```bash
 npm install
-```
-
-3. Create env file:
-
-```bash
 cp .env.example .env
 ```
 
-4. Edit `.env` with your provider and key:
+Set required values in `.env`:
 
 - `KIMI_PROVIDER=moonshot` or `code`
-- Moonshot key: `MOONSHOT_API_KEY=...`
-- or Kimi Code key: `KIMI_CODE_API_KEY=...`
-- (Recommended) `KIMI_TIMEOUT_MS=30000`
-- `OWN_SKILL_UPDATE_HOURS=24`
+- If `moonshot`: `MOONSHOT_API_KEY=...` (or `KIMI_API_KEY`)
+- If `code`: `KIMI_CODE_API_KEY=...` (or `KIMI_API_KEY`)
 
-5. (Optional) Enable shell tools:
-
-```env
-ALLOW_SHELL=true
-```
-
-6. Start CLI:
+Then run:
 
 ```bash
 npm run cli
 ```
 
-7. Verify it works:
+Exit with `/exit` or `/quit`.
 
-- Type: `hello`
-- Exit with: `/exit`
-
-## Configuration
-
-Copy env template (if not already done):
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and set at least:
-
-- `KIMI_PROVIDER=moonshot` or `code`
-- Provider key:
-  - Moonshot: `MOONSHOT_API_KEY=...`
-  - Kimi Code: `KIMI_CODE_API_KEY=...` (or `KIMI_API_KEY`)
-- Optional:
-  - `KIMI_TIMEOUT_MS=30000`
-  - `OWN_SKILL_UPDATE_HOURS=24`
-  - `ALLOW_SHELL=true` to let the agent run shell commands
-  - `TELEGRAM_BOT_TOKEN=...` for Telegram mode
-
-## Run
+## Run Modes
 
 CLI:
 
@@ -96,36 +51,52 @@ CLI:
 npm run cli
 ```
 
-Telegram bot:
+Telegram foreground:
 
 ```bash
 npm run telegram
 ```
 
-## Run 24/7 on Linux
-
-Use a process manager so Tiger restarts automatically after reboot/crash.
-
-Example with PM2:
+Telegram background supervisor:
 
 ```bash
-npm install -g pm2
-cd /root/tiger
-pm2 start npm --name tiger-telegram -- run telegram
-pm2 save
-pm2 startup
+npm run telegram:bg
 ```
 
-Check status/logs:
+Stop background Telegram:
 
 ```bash
-pm2 status
-pm2 logs tiger-telegram
+npm run telegram:stop
 ```
 
-## Provider Notes
+Background logs are written to `logs/telegram-supervisor.log`.
 
-### Moonshot Open Platform (recommended for custom apps)
+## Environment Variables
+
+From `.env.example`:
+
+- `KIMI_PROVIDER` (`moonshot` or `code`)
+- `MOONSHOT_API_KEY`
+- `KIMI_CODE_API_KEY`
+- `KIMI_API_KEY` (fallback alias)
+- `KIMI_BASE_URL`
+- `KIMI_CHAT_MODEL`
+- `KIMI_EMBED_MODEL`
+- `KIMI_USER_AGENT`
+- `KIMI_ENABLE_EMBEDDINGS`
+- `KIMI_TIMEOUT_MS` (default `30000`)
+- `OWN_SKILL_UPDATE_HOURS` (default `24`)
+- `TELEGRAM_BOT_TOKEN`
+- `ALLOW_SHELL` (default `false`)
+- `ALLOW_SKILL_INSTALL` (present in config; default `false`)
+- `DATA_DIR` (default `./data`)
+- `DB_PATH` (default `./db/agent.json`)
+- `MAX_MESSAGES` (default `200`)
+- `RECENT_MESSAGES` (default `40`)
+
+## Provider Examples
+
+Moonshot/Open Platform:
 
 ```env
 KIMI_PROVIDER=moonshot
@@ -136,7 +107,7 @@ KIMI_ENABLE_EMBEDDINGS=true
 KIMI_EMBED_MODEL=kimi-embedding-v1
 ```
 
-### Kimi Code mode
+Kimi Code:
 
 ```env
 KIMI_PROVIDER=code
@@ -148,141 +119,58 @@ KIMI_ENABLE_EMBEDDINGS=false
 KIMI_TIMEOUT_MS=30000
 ```
 
-Note: Kimi Code access is policy-restricted by provider; some custom clients may be blocked even with valid keys.
-Tiger normalizes provider-style refs automatically:
-- `kimi-coding/k2p5` -> `k2p5`
-- `moonshot/kimi-k2.5` -> `kimi-k2.5`
+## Context and Memory
 
-## Context, Memory, and "Soul"
+Tiger loads these files into system context every turn:
 
-Tiger’s behavior is driven by three layers:
-
-1. Immediate conversation (recent messages)
-2. Persistent context files (`data/*.md`)
-3. Long-term memory store (`db/agent.sqlite` or JSON DB path)
-
-### Context files
-
-Tiger loads local context files and injects them into the system prompt each turn:
-
+- `data/soul.md`
 - `data/human.md`
 - `data/human2.md`
-- `data/soul.md`
 - `data/ownskill.md`
 
-These files define identity, user profile, constraints, and stable guidance.
+Behavior summary:
 
-### Soul (`data/soul.md`)
+- `human2.md` may be appended with profile updates over time.
+- `ownskill.md` is refreshed periodically (`OWN_SKILL_UPDATE_HOURS`).
+- Conversations/messages/memories are stored in `DB_PATH` (JSON file).
+- When embeddings are enabled, compacted memory recall uses vector similarity.
 
-`soul.md` is the core identity/personality anchor.  
-It should contain durable principles, tone, and non-negotiable behavior rules.
+## Built-in Tools
 
-Use `soul.md` for:
-- agent character and mission
-- safety boundaries
-- style rules for responses
-- stable operating values
+Tiger can call local tools for:
 
-Keep it concise and durable (avoid temporary task details here).
+- file ops: `list_files`, `read_file`, `write_file`
+- shell: `run_shell` (`ALLOW_SHELL=true` required)
+- skills: `list_skills`, `load_skill`, `clawhub_search`, `clawhub_install`
+- orchestration: `run_sub_agents`
 
-### User profile files (`human.md`, `human2.md`)
-
-- `human.md`: baseline user profile or environment facts
-- `human2.md`: evolving profile updates over time
-
-Tiger may append structured updates to `human2.md` after interactions.
-
-### Own skill summary (`ownskill.md`)
-
-Tiger maintains `data/ownskill.md` as a self-summary of what it has learned from recent work.
-
-- Auto-update cadence: every 24 hours by default
-- Config: `OWN_SKILL_UPDATE_HOURS`
-- Content includes:
-  - learned skills
-  - recent work summary
-  - known limits
-  - next improvements
-
-### Vector memory / compacted memory
-
-Tiger maintains long-term memory by compacting old chat history:
-
-- Old messages are summarized when conversation length grows
-- Summary can be embedded into vectors (when embeddings are enabled)
-- Memory retrieval uses similarity search (`cosine similarity`) to pull relevant past facts
-
-Storage lives in DB (`DB_PATH`), including:
-- conversations
-- messages
-- compacted memories + embeddings
-
-For Kimi Code mode, embeddings are typically disabled:
-- `KIMI_ENABLE_EMBEDDINGS=false`
-
-In that mode, Tiger still works with recent chat + context files, but semantic vector recall is reduced.
-
-## Skills (ClawHub)
-
-Tiger includes:
-- `clawhub_search` tool
-- `clawhub_install` tool
-
-Also install CLI locally:
-
-```bash
-npm install clawhub
-```
-
-If registry auth is needed:
-
-```bash
-npx clawhub login
-```
-
-Skills are installed under `./skills`.
-
-## Common Commands
-
-- Start CLI: `npm run cli`
-- Exit CLI: `/exit`
-- Show local skills: ask Tiger to run `list_skills`
-- Read a skill: ask Tiger to run `load_skill`
-- Inspect context files: ask Tiger to read `data/soul.md` / `data/human.md`
+Skills directory: `./skills`
 
 ## Troubleshooting
 
-- `401 Invalid Authentication`:
-  - wrong/revoked key
-  - wrong provider key type
-  - extra spaces/quotes in env values
+Authentication errors (`401`):
+- wrong provider key for selected `KIMI_PROVIDER`
+- missing key value
+- extra quotes/spaces in `.env`
 
-- `403 ... only available for Coding Agents`:
-  - Kimi Code policy restriction for your client type
+`403 ... only available for Coding Agents`:
+- provider-side restriction for your token/client type
 
-- `thinking is enabled but reasoning_content is missing`:
-  - fixed in current code by forwarding `reasoning_content` across tool-call turns
+`Shell tool disabled`:
+- set `ALLOW_SHELL=true` and restart
 
-- `Shell tool disabled`:
-  - set `ALLOW_SHELL=true` in `.env`
-  - restart process
+Network/timeout errors:
+- verify DNS/network reachability from host
+- optionally reduce timeout during debugging (`KIMI_TIMEOUT_MS=10000`)
 
-- `Kimi API network error: fetch failed` or `Kimi API timeout after ...`:
-  - server cannot reach/resolve provider endpoint (DNS/network issue)
-  - common cause on VPS: `EAI_AGAIN` DNS resolver failure
-  - check quickly:
-    - `ping -c 2 1.1.1.1`
-    - `ping -c 2 api.kimi.com`
-    - `cat /etc/resolv.conf`
-  - reduce debug wait time with `KIMI_TIMEOUT_MS=10000`
+Multiple CLI processes / stuck sessions:
 
-- CLI seems stuck / multiple Tiger jobs:
-  - avoid `Ctrl+Z` while in chat
-  - stop all old sessions:
-    - `pkill -f "node src/cli.js|npm run cli"`
-  - restart one clean session: `npm run cli`
+```bash
+pkill -f "node src/cli.js|npm run cli"
+npm run cli
+```
 
 ## Security
 
-- Never commit `.env`.
-- Rotate leaked API keys immediately.
+- Do not commit `.env`.
+- Rotate keys immediately if exposed.

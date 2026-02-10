@@ -1,11 +1,86 @@
 #!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
+const { spawn } = require('child_process');
 const { ensureContextFiles } = require('./agent/contextFiles');
 const { startTelegramBot } = require('./telegram/bot');
 const { handleMessage } = require('./agent/mainAgent');
 
+const rootDir = path.resolve(__dirname, '..');
+const supervisorPidPath = path.resolve(rootDir, 'tiger-telegram.pid');
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason && reason.stack ? reason.stack : String(reason);
+  process.stderr.write(`[process] unhandledRejection: ${msg}\n`);
+});
+
+process.on('uncaughtException', (err) => {
+  process.stderr.write(`[process] uncaughtException: ${err.stack || err.message}\n`);
+});
+
 function isTelegramMode(argv) {
   return argv.includes('--telegram');
+}
+
+function hasFlag(argv, flag) {
+  return argv.includes(flag);
+}
+
+function isPidRunning(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function getExistingSupervisorPid() {
+  if (!fs.existsSync(supervisorPidPath)) return null;
+  const pid = Number(fs.readFileSync(supervisorPidPath, 'utf8').trim());
+  return Number.isInteger(pid) && pid > 0 ? pid : null;
+}
+
+function startTelegramInBackground() {
+  ensureContextFiles();
+  const existingPid = getExistingSupervisorPid();
+  if (existingPid && isPidRunning(existingPid)) {
+    process.stdout.write(`Telegram background bot is already running (PID ${existingPid}).\n`);
+    return;
+  }
+
+  fs.mkdirSync(path.resolve(rootDir, 'logs'), { recursive: true });
+  const supervisorLogPath = path.resolve(rootDir, 'logs', 'telegram-supervisor.log');
+  const logFd = fs.openSync(supervisorLogPath, 'a');
+  const supervisorScript = path.resolve(__dirname, 'telegram', 'supervisor.js');
+  const child = spawn(process.execPath, [supervisorScript], {
+    cwd: rootDir,
+    env: process.env,
+    detached: true,
+    stdio: ['ignore', logFd, logFd]
+  });
+  child.unref();
+  fs.closeSync(logFd);
+
+  fs.writeFileSync(supervisorPidPath, `${child.pid}\n`, 'utf8');
+  process.stdout.write(`Telegram background bot started (supervisor PID ${child.pid}).\n`);
+}
+
+function stopTelegramBackground() {
+  const pid = getExistingSupervisorPid();
+  if (!pid || !isPidRunning(pid)) {
+    if (fs.existsSync(supervisorPidPath)) fs.unlinkSync(supervisorPidPath);
+    process.stdout.write('Telegram background bot is not running.\n');
+    return;
+  }
+
+  process.kill(pid, 'SIGTERM');
+  fs.unlinkSync(supervisorPidPath);
+  const workerPidPath = path.resolve(rootDir, 'tiger-telegram-worker.pid');
+  if (fs.existsSync(workerPidPath)) fs.unlinkSync(workerPidPath);
+  process.stdout.write(`Stopped Telegram background bot (supervisor PID ${pid}).\n`);
 }
 
 async function runCli() {
@@ -52,7 +127,18 @@ async function runCli() {
 }
 
 async function main() {
-  if (isTelegramMode(process.argv.slice(2))) {
+  const argv = process.argv.slice(2);
+  if (hasFlag(argv, '--telegram-stop')) {
+    stopTelegramBackground();
+    return;
+  }
+
+  if (isTelegramMode(argv) && hasFlag(argv, '--background')) {
+    startTelegramInBackground();
+    return;
+  }
+
+  if (isTelegramMode(argv)) {
     ensureContextFiles();
     startTelegramBot();
     process.stdout.write('Telegram bot started.\n');

@@ -8,6 +8,14 @@
     "super-websearch-realtime": {
       "version": "1.0.0",
       "installedAt": 1770690251886
+    },
+    "search-x": {
+      "version": "1.0.0",
+      "installedAt": 1770694342517
+    },
+    "twitter-sum": {
+      "version": "1.0.0",
+      "installedAt": 1770705477767
     }
   }
 }
