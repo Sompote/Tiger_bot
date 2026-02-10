@@ -6,6 +6,7 @@
   "description": "CLI agent service with Telegram bot and local memory",
   "main": "src/cli.js",
   "scripts": {
+    "setup": "node scripts/setup.js",
     "start": "node src/cli.js",
     "telegram": "node src/cli.js --telegram",
     "telegram:bg": "node src/cli.js --telegram --background",

@@ -27,13 +27,8 @@ Core capabilities:
 ```bash
 npm install
 cp .env.example .env
+npm run setup
 ```
-
-Set required values in `.env`:
-
-- `KIMI_PROVIDER=moonshot` or `code`
-- If `moonshot`: `MOONSHOT_API_KEY=...` (or `KIMI_API_KEY`)
-- If `code`: `KIMI_CODE_API_KEY=...` (or `KIMI_API_KEY`)
 
 Then run:
 
@@ -42,6 +37,19 @@ npm run cli
 ```
 
 Exit with `/exit` or `/quit`.
+
+## First-Time Setup Wizard
+
+Run:
+
+```bash
+npm run setup
+```
+
+It will create:
+
+- `.env` (non-secret settings)
+- `.env.secrets` (API keys/tokens, gitignored) or `.env.secrets.enc` (encrypted)
 
 ## Run Modes
 
