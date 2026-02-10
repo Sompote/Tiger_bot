@@ -2,7 +2,13 @@
 
 Made by AI Research Group KMUTT.
 
-Practical local AI agent with:
+Tiger is an Agentic AI assistant for Linux. It is designed for continuous operation (24/7), practical task execution, and long-lived memory.
+From the start, Tiger combines:
+- an agentic reasoning loop (assistant -> tools -> tool results -> final reply)
+- persistent context files (`human.md`, `human2.md`, `soul.md`)
+- compacted long-term memory with optional vector retrieval
+
+Core capabilities:
 - CLI chat
 - Telegram bot mode
 - Local conversation memory
@@ -93,6 +99,27 @@ Telegram bot:
 npm run telegram
 ```
 
+## Run 24/7 on Linux
+
+Use a process manager so Tiger restarts automatically after reboot/crash.
+
+Example with PM2:
+
+```bash
+npm install -g pm2
+cd /root/tiger
+pm2 start npm --name tiger-telegram -- run telegram
+pm2 save
+pm2 startup
+```
+
+Check status/logs:
+
+```bash
+pm2 status
+pm2 logs tiger-telegram
+```
+
 ## Provider Notes
 
 ### Moonshot Open Platform (recommended for custom apps)
@@ -123,6 +150,62 @@ Tiger normalizes provider-style refs automatically:
 - `kimi-coding/k2p5` -> `k2p5`
 - `moonshot/kimi-k2.5` -> `kimi-k2.5`
 
+## Context, Memory, and "Soul"
+
+Tiger’s behavior is driven by three layers:
+
+1. Immediate conversation (recent messages)
+2. Persistent context files (`data/*.md`)
+3. Long-term memory store (`db/agent.sqlite` or JSON DB path)
+
+### Context files
+
+Tiger loads local context files and injects them into the system prompt each turn:
+
+- `data/human.md`
+- `data/human2.md`
+- `data/soul.md`
+
+These files define identity, user profile, constraints, and stable guidance.
+
+### Soul (`data/soul.md`)
+
+`soul.md` is the core identity/personality anchor.  
+It should contain durable principles, tone, and non-negotiable behavior rules.
+
+Use `soul.md` for:
+- agent character and mission
+- safety boundaries
+- style rules for responses
+- stable operating values
+
+Keep it concise and durable (avoid temporary task details here).
+
+### User profile files (`human.md`, `human2.md`)
+
+- `human.md`: baseline user profile or environment facts
+- `human2.md`: evolving profile updates over time
+
+Tiger may append structured updates to `human2.md` after interactions.
+
+### Vector memory / compacted memory
+
+Tiger maintains long-term memory by compacting old chat history:
+
+- Old messages are summarized when conversation length grows
+- Summary can be embedded into vectors (when embeddings are enabled)
+- Memory retrieval uses similarity search (`cosine similarity`) to pull relevant past facts
+
+Storage lives in DB (`DB_PATH`), including:
+- conversations
+- messages
+- compacted memories + embeddings
+
+For Kimi Code mode, embeddings are typically disabled:
+- `KIMI_ENABLE_EMBEDDINGS=false`
+
+In that mode, Tiger still works with recent chat + context files, but semantic vector recall is reduced.
+
 ## Skills (ClawHub)
 
 Tiger includes:
@@ -149,6 +232,7 @@ Skills are installed under `./skills`.
 - Exit CLI: `/exit`
 - Show local skills: ask Tiger to run `list_skills`
 - Read a skill: ask Tiger to run `load_skill`
+- Inspect context files: ask Tiger to read `data/soul.md` / `data/human.md`
 
 ## Troubleshooting
 
