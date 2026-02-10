@@ -1,6 +1,6 @@
 # Tiger Agent
 
-Made by AI Research Group KMUTT.
+Made by AI Research Group.
 
 Tiger is an Agentic AI assistant for Linux. It is designed for continuous operation (24/7), practical task execution, and long-lived memory.
 From the start, Tiger combines:
