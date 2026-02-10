@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion, embedText } = require('../kimiClient');
-const { embeddingsEnabled, allowShell, ownSkillPath, ownSkillUpdateHours } = require('../config');
+const {
+  embeddingsEnabled,
+  allowShell,
+  ownSkillPath,
+  ownSkillUpdateHours,
+  soulPath,
+  soulUpdateHours
+} = require('../config');
 const { loadContextFiles } = require('./contextFiles');
 const { tools, callTool } = require('./toolbox');
 const {
@@ -112,14 +119,18 @@ function buildSystemPrompt(contextText, memoriesText) {
     .join('\n');
 }
 
-function shouldRefreshOwnSkill() {
+function shouldRefreshFile(filePath, updateHours) {
   try {
-    const stat = fs.statSync(ownSkillPath);
-    const maxAgeMs = ownSkillUpdateHours * 60 * 60 * 1000;
+    const stat = fs.statSync(filePath);
+    const maxAgeMs = updateHours * 60 * 60 * 1000;
     return Date.now() - stat.mtimeMs >= maxAgeMs;
   } catch (err) {
     return true;
   }
+}
+
+function shouldRefreshOwnSkill() {
+  return shouldRefreshFile(ownSkillPath, ownSkillUpdateHours);
 }
 
 async function maybeUpdateOwnSkillSummary(conversationIdValue) {
@@ -156,6 +167,41 @@ async function maybeUpdateOwnSkillSummary(conversationIdValue) {
   const next = String(message.content || '').trim();
   if (!next) return;
   fs.writeFileSync(path.resolve(ownSkillPath), `${next}\n`, 'utf8');
+}
+
+async function maybeUpdateSoulSummary(conversationIdValue) {
+  if (!shouldRefreshFile(soulPath, soulUpdateHours)) return;
+
+  const recent = getRecentMessages(conversationIdValue, 80);
+  const transcript = recent
+    .map((m) => `${String(m.role || '').toUpperCase()}: ${String(m.content || '')}`)
+    .join('\n');
+  const previous = fs.existsSync(soulPath) ? fs.readFileSync(soulPath, 'utf8') : '';
+  const nowIso = new Date().toISOString();
+
+  const message = await chatCompletion([
+    {
+      role: 'system',
+      content: [
+        "You maintain Tiger's soul.md: identity, principles, operating rules, and stable preferences.",
+        'Return concise markdown only.',
+        'Always include a section:',
+        '## Self-Update',
+        `- cadence_hours: ${soulUpdateHours}`,
+        `- last_updated: ${nowIso}`,
+        '- note: This is a self-maintained summary (not model training).',
+        'Keep it factual; do not include secrets/tokens; do not paste API keys.'
+      ].join('\n')
+    },
+    {
+      role: 'user',
+      content: `Previous soul.md:\n${previous || '(empty)'}\n\nRecent work transcript:\n${transcript || '(empty)'}`
+    }
+  ]);
+
+  const next = String(message.content || '').trim();
+  if (!next) return;
+  fs.writeFileSync(path.resolve(soulPath), `${next}\n`, 'utf8');
 }
 
 async function runWithTools(initialMessages) {
@@ -274,6 +320,12 @@ async function handleMessage({ platform, userId, text }) {
     await maybeUpdateOwnSkillSummary(conversationIdValue);
   } catch (err) {
     // Non-blocking own-skill update.
+  }
+
+  try {
+    await maybeUpdateSoulSummary(conversationIdValue);
+  } catch (err) {
+    // Non-blocking soul update.
   }
 
   return reply;

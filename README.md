@@ -86,6 +86,7 @@ From `.env.example`:
 - `KIMI_ENABLE_EMBEDDINGS`
 - `KIMI_TIMEOUT_MS` (default `30000`)
 - `OWN_SKILL_UPDATE_HOURS` (default `24`)
+- `SOUL_UPDATE_HOURS` (default `24`)
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOW_SHELL` (default `false`)
 - `ALLOW_SKILL_INSTALL` (present in config; default `false`)
@@ -135,6 +136,7 @@ Behavior summary:
 
 - `human2.md` may be appended with profile updates over time.
 - `ownskill.md` is refreshed periodically (`OWN_SKILL_UPDATE_HOURS`).
+- `soul.md` is refreshed periodically (`SOUL_UPDATE_HOURS`).
 - Conversations/messages/memories are stored in `DB_PATH` (JSON file).
 - When embeddings are enabled, compacted memory recall uses vector similarity.
 

@@ -55,6 +55,7 @@ const embeddingsEnabled =
     : ['1', 'true', 'yes', 'on'].includes(embedFlagRaw.toLowerCase());
 const ownSkillUpdateHours = Math.max(1, Number(process.env.OWN_SKILL_UPDATE_HOURS || 24));
 const ownSkillFile = cleanEnvValue(process.env.OWN_SKILL_FILE) || 'ownskill.md';
+const soulUpdateHours = Math.max(1, Number(process.env.SOUL_UPDATE_HOURS || 24));
 
 module.exports = {
   kimiProvider,
@@ -74,6 +75,8 @@ module.exports = {
   dataDir: path.resolve(process.env.DATA_DIR || './data'),
   ownSkillPath: path.resolve(process.env.DATA_DIR || './data', ownSkillFile),
   ownSkillUpdateHours,
+  soulPath: path.resolve(process.env.DATA_DIR || './data', 'soul.md'),
+  soulUpdateHours,
   dbPath: path.resolve(process.env.DB_PATH || './db/agent.json'),
   maxMessages: Number(process.env.MAX_MESSAGES || 200),
   recentMessages: Number(process.env.RECENT_MESSAGES || 40)
