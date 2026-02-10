@@ -178,5 +178,35 @@ npm run cli
 ## Security
 
 - Do not commit `.env`.
+- Prefer splitting secrets into `.env.secrets` (gitignored) or using `.env.secrets.enc` (encrypted at rest).
 - Optional: enable the local git secret-scan hooks: `git config core.hooksPath .githooks`.
 - Rotate keys immediately if exposed.
+
+### Secret File Split (Recommended)
+
+- Put non-secrets in `.env`
+- Put API keys/tokens in `.env.secrets` (gitignored)
+
+Create it from the template:
+
+```bash
+cp .env.secrets.example .env.secrets
+chmod 600 .env.secrets
+```
+
+### Encrypted Secrets (At-Rest)
+
+This protects secrets if someone steals the repo/disk, but it does not protect you if an attacker already has root access on the server.
+
+Encrypt:
+
+```bash
+export SECRETS_PASSPHRASE='your-long-passphrase'
+node scripts/encrypt-env.js --in .env.secrets --out .env.secrets.enc
+rm .env.secrets
+```
+
+Run the bot with:
+
+- `SECRETS_PASSPHRASE` set in the environment (not in git)
+- optional `SECRETS_FILE=.env.secrets.enc`

@@ -1,7 +1,51 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const { decryptToString } = require('../scripts/cryptoEnv');
 
-dotenv.config();
+function loadDotenvIfPresent(p) {
+  const full = path.resolve(process.cwd(), p);
+  if (!fs.existsSync(full)) return;
+  dotenv.config({ path: full, override: false });
+}
+
+function parseEnvText(text) {
+  const out = {};
+  const lines = String(text || '').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) continue;
+    const k = trimmed.slice(0, idx).trim();
+    let v = trimmed.slice(idx + 1).trim();
+    // remove surrounding quotes
+    v = v.replace(/^['"]|['"]$/g, '');
+    if (k) out[k] = v;
+  }
+  return out;
+}
+
+function loadEncryptedSecretsIfPresent() {
+  const encPath = process.env.SECRETS_FILE || '.env.secrets.enc';
+  const passphrase = process.env.SECRETS_PASSPHRASE || '';
+  const full = path.resolve(process.cwd(), encPath);
+  if (!fs.existsSync(full)) return;
+  if (!passphrase) return;
+  const payload = JSON.parse(fs.readFileSync(full, 'utf8'));
+  const plaintext = decryptToString(payload, passphrase);
+  const kv = parseEnvText(plaintext);
+  for (const [k, v] of Object.entries(kv)) {
+    if (process.env[k] == null || process.env[k] === '') {
+      process.env[k] = v;
+    }
+  }
+}
+
+// Load public config first, then local secrets, then encrypted secrets (optional).
+loadDotenvIfPresent('.env');
+loadDotenvIfPresent('.env.secrets');
+loadEncryptedSecretsIfPresent();
 
 function cleanEnvValue(value) {
   if (value == null) return '';
