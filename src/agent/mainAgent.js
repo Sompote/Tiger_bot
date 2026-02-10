@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion, embedText } = require('../kimiClient');
-const { embeddingsEnabled, allowShell } = require('../config');
+const { embeddingsEnabled, allowShell, ownSkillPath, ownSkillUpdateHours } = require('../config');
 const { loadContextFiles } = require('./contextFiles');
 const { tools, callTool } = require('./toolbox');
 const {
@@ -110,6 +110,52 @@ function buildSystemPrompt(contextText, memoriesText) {
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function shouldRefreshOwnSkill() {
+  try {
+    const stat = fs.statSync(ownSkillPath);
+    const maxAgeMs = ownSkillUpdateHours * 60 * 60 * 1000;
+    return Date.now() - stat.mtimeMs >= maxAgeMs;
+  } catch (err) {
+    return true;
+  }
+}
+
+async function maybeUpdateOwnSkillSummary(conversationIdValue) {
+  if (!shouldRefreshOwnSkill()) return;
+
+  const recent = getRecentMessages(conversationIdValue, 80);
+  const transcript = recent
+    .map((m) => `${String(m.role || '').toUpperCase()}: ${String(m.content || '')}`)
+    .join('\n');
+  const previous = fs.existsSync(ownSkillPath) ? fs.readFileSync(ownSkillPath, 'utf8') : '';
+
+  const message = await chatCompletion([
+    {
+      role: 'system',
+      content: [
+        'You maintain Tiger\'s own skill summary file.',
+        'Return concise markdown only.',
+        'Include sections:',
+        '# ownskill',
+        '## Updated',
+        '## Skills Learned',
+        '## Recent Work Summary',
+        '## Known Limits',
+        '## Next Improvements',
+        'Base updates on recent conversation work and keep it factual.'
+      ].join('\n')
+    },
+    {
+      role: 'user',
+      content: `Previous ownskill.md:\n${previous || '(empty)'}\n\nRecent work transcript:\n${transcript || '(empty)'}`
+    }
+  ]);
+
+  const next = String(message.content || '').trim();
+  if (!next) return;
+  fs.writeFileSync(path.resolve(ownSkillPath), `${next}\n`, 'utf8');
 }
 
 async function runWithTools(initialMessages) {
@@ -222,6 +268,12 @@ async function handleMessage({ platform, userId, text }) {
     await maybeUpdateHumanFile(text, reply);
   } catch (err) {
     // Non-blocking profile update.
+  }
+
+  try {
+    await maybeUpdateOwnSkillSummary(conversationIdValue);
+  } catch (err) {
+    // Non-blocking own-skill update.
   }
 
   return reply;

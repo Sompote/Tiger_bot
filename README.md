@@ -7,6 +7,7 @@ From the start, Tiger combines:
 - an agentic reasoning loop (assistant -> tools -> tool results -> final reply)
 - persistent context files (`human.md`, `human2.md`, `soul.md`)
 - compacted long-term memory with optional vector retrieval
+- a self-maintained `ownskill.md` summary that auto-refreshes every 24 hours
 
 Core capabilities:
 - CLI chat
@@ -48,6 +49,7 @@ cp .env.example .env
 - Moonshot key: `MOONSHOT_API_KEY=...`
 - or Kimi Code key: `KIMI_CODE_API_KEY=...`
 - (Recommended) `KIMI_TIMEOUT_MS=30000`
+- `OWN_SKILL_UPDATE_HOURS=24`
 
 5. (Optional) Enable shell tools:
 
@@ -82,6 +84,7 @@ Edit `.env` and set at least:
   - Kimi Code: `KIMI_CODE_API_KEY=...` (or `KIMI_API_KEY`)
 - Optional:
   - `KIMI_TIMEOUT_MS=30000`
+  - `OWN_SKILL_UPDATE_HOURS=24`
   - `ALLOW_SHELL=true` to let the agent run shell commands
   - `TELEGRAM_BOT_TOKEN=...` for Telegram mode
 
@@ -165,6 +168,7 @@ Tiger loads local context files and injects them into the system prompt each tur
 - `data/human.md`
 - `data/human2.md`
 - `data/soul.md`
+- `data/ownskill.md`
 
 These files define identity, user profile, constraints, and stable guidance.
 
@@ -187,6 +191,18 @@ Keep it concise and durable (avoid temporary task details here).
 - `human2.md`: evolving profile updates over time
 
 Tiger may append structured updates to `human2.md` after interactions.
+
+### Own skill summary (`ownskill.md`)
+
+Tiger maintains `data/ownskill.md` as a self-summary of what it has learned from recent work.
+
+- Auto-update cadence: every 24 hours by default
+- Config: `OWN_SKILL_UPDATE_HOURS`
+- Content includes:
+  - learned skills
+  - recent work summary
+  - known limits
+  - next improvements
 
 ### Vector memory / compacted memory
 

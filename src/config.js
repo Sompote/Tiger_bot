@@ -53,6 +53,8 @@ const embeddingsEnabled =
   embedFlagRaw === ''
     ? kimiProvider !== 'code'
     : ['1', 'true', 'yes', 'on'].includes(embedFlagRaw.toLowerCase());
+const ownSkillUpdateHours = Math.max(1, Number(process.env.OWN_SKILL_UPDATE_HOURS || 24));
+const ownSkillFile = cleanEnvValue(process.env.OWN_SKILL_FILE) || 'ownskill.md';
 
 module.exports = {
   kimiProvider,
@@ -70,6 +72,8 @@ module.exports = {
   allowShell: String(process.env.ALLOW_SHELL || 'false').toLowerCase() === 'true',
   allowSkillInstall: String(process.env.ALLOW_SKILL_INSTALL || 'false').toLowerCase() === 'true',
   dataDir: path.resolve(process.env.DATA_DIR || './data'),
+  ownSkillPath: path.resolve(process.env.DATA_DIR || './data', ownSkillFile),
+  ownSkillUpdateHours,
   dbPath: path.resolve(process.env.DB_PATH || './db/agent.json'),
   maxMessages: Number(process.env.MAX_MESSAGES || 200),
   recentMessages: Number(process.env.RECENT_MESSAGES || 40)

@@ -3,7 +3,7 @@ const path = require('path');
 const { dataDir } = require('../config');
 const { ensureDir } = require('../utils');
 
-const files = ['soul.md', 'human.md', 'human2.md'];
+const files = ['soul.md', 'human.md', 'human2.md', 'ownskill.md'];
 
 function ensureContextFiles() {
   ensureDir(dataDir);
