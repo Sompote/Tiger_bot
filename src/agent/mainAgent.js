@@ -7,7 +7,9 @@ const {
   ownSkillPath,
   ownSkillUpdateHours,
   soulPath,
-  soulUpdateHours
+  soulUpdateHours,
+  memoryIngestEveryTurns,
+  memoryIngestMinChars
 } = require('../config');
 const { loadContextFiles } = require('./contextFiles');
 const { tools, callTool } = require('./toolbox');
@@ -18,7 +20,10 @@ const {
   getMessagesForCompaction,
   deleteMessagesUpTo,
   addMemory,
-  getRelevantMemories
+  getRelevantMemories,
+  getMeta,
+  setMeta,
+  recordSkillUsage
 } = require('./db');
 
 function safeJsonParse(text, fallback = {}) {
@@ -153,6 +158,9 @@ async function maybeUpdateOwnSkillSummary(conversationIdValue) {
         '## Updated',
         '## Skills Learned',
         '## Recent Work Summary',
+        '## Patterns Observed',
+        '## Failures & Lessons',
+        '## Successful Workflows',
         '## Known Limits',
         '## Next Improvements',
         'Base updates on recent conversation work and keep it factual.'
@@ -202,6 +210,56 @@ async function maybeUpdateSoulSummary(conversationIdValue) {
   const next = String(message.content || '').trim();
   if (!next) return;
   fs.writeFileSync(path.resolve(soulPath), `${next}\n`, 'utf8');
+}
+
+async function maybeIngestTurnMemory(conversationIdValue, userText, assistantText) {
+  const recent = getRecentMessages(conversationIdValue, 120);
+  const messageCount = recent.length;
+  const key = `turn_ingest_last_count:${conversationIdValue}`;
+  const lastCount = Number(getMeta(key, 0) || 0);
+  const thresholdMessages = Math.max(2, memoryIngestEveryTurns * 2);
+  const combined = `${String(userText || '').trim()}\n${String(assistantText || '').trim()}`.trim();
+  const hasPreferenceSignal =
+    /(prefer|always|never|avoid|instead|workflow|habit|schedule|every|important|priority)/i.test(combined);
+
+  if (messageCount - lastCount < thresholdMessages && combined.length < memoryIngestMinChars && !hasPreferenceSignal) {
+    return;
+  }
+
+  const transcript = recent
+    .slice(-10)
+    .map((m) => `${String(m.role || '').toUpperCase()}: ${String(m.content || '')}`)
+    .join('\n');
+
+  const message = await chatCompletion([
+    {
+      role: 'system',
+      content: [
+        'Extract one durable memory item from the recent exchange.',
+        'Return plain text only, max 2 short bullets.',
+        'Focus on user preferences, recurring workflows, or stable decisions.',
+        'Return empty string if there is no durable memory.'
+      ].join('\n')
+    },
+    {
+      role: 'user',
+      content: transcript || '(empty)'
+    }
+  ]);
+
+  const summary = String(message.content || '').trim();
+  if (!summary) return;
+
+  let emb = [];
+  if (embeddingsEnabled) {
+    try {
+      emb = await embedText(summary);
+    } catch (err) {
+      emb = [];
+    }
+  }
+  addMemory(conversationIdValue, 'turn_ingest', summary, emb);
+  setMeta(key, messageCount);
 }
 
 async function runWithTools(initialMessages) {
@@ -255,6 +313,12 @@ async function runWithTools(initialMessages) {
           name,
           error: String(payload?.error || 'tool execution failed')
         };
+      }
+
+      recordSkillUsage(name, 'tool');
+      if (name === 'load_skill') {
+        const skillName = String(args.name || '').trim();
+        if (skillName) recordSkillUsage(`skill:${skillName}`, 'skill');
       }
 
       messages.push({
@@ -326,6 +390,12 @@ async function handleMessage({ platform, userId, text }) {
     await maybeUpdateSoulSummary(conversationIdValue);
   } catch (err) {
     // Non-blocking soul update.
+  }
+
+  try {
+    await maybeIngestTurnMemory(conversationIdValue, text, reply);
+  } catch (err) {
+    // Non-blocking ingestion update.
   }
 
   return reply;

@@ -6,13 +6,13 @@ Tiger is an Agentic AI assistant for Linux. It is designed for continuous operat
 From the start, Tiger combines:
 - an agentic reasoning loop (assistant -> tools -> tool results -> final reply)
 - persistent context files (`human.md`, `human2.md`, `soul.md`)
-- compacted long-term memory with optional vector retrieval
+- compacted long-term memory with SQLite-backed vector retrieval (default)
 - a self-maintained `ownskill.md` summary that auto-refreshes every 24 hours
 
 Core capabilities:
 - CLI chat mode
 - Telegram bot mode (foreground or background)
-- Local conversation memory (`db/agent.json` by default)
+- Local conversation/message state (`db/agent.json` by default) plus SQLite vector memory (`db/memory.sqlite` by default)
 - Tool calling (files, shell, skills, sub-agents)
 - ClawHub skill search/install support
 - OpenClaw-style tool loop (assistant -> tool calls -> tool results -> final synthesis)
@@ -21,35 +21,37 @@ Core capabilities:
 
 - Node.js 18+ (20+ recommended)
 - npm
+- Python 3 (used by SQLite memory helper at `scripts/sqlite_memory.py`)
 
-## Quick Start
+## Quick Start (First Run)
+
+Use this exact sequence on a fresh clone:
 
 ```bash
 npm install
-cp .env.example .env
 npm run setup
-```
-
-Then run:
-
-```bash
 npm run cli
 ```
 
-Exit with `/exit` or `/quit`.
+CLI exit commands: `/exit` or `/quit`.
 
-## First-Time Setup Wizard
+## Setup Wizard Output
 
-Run:
-
-```bash
-npm run setup
-```
-
-It will create:
+`npm run setup` creates:
 
 - `.env` (non-secret settings)
 - `.env.secrets` (API keys/tokens, gitignored) or `.env.secrets.enc` (encrypted)
+
+Setup opt-ins during install:
+- persistent vs volatile vector DB path (`./db/memory.sqlite` vs `/tmp/tiger_memory.db`)
+- optional immediate `sqlite-vec` bootstrap (`pip install` + extension auto-detect)
+- optional encrypted secrets file (`.env.secrets.enc`)
+
+If you prefer manual setup:
+
+```bash
+cp .env.example .env
+```
 
 ## Run Modes
 
@@ -95,11 +97,16 @@ From `.env.example`:
 - `KIMI_TIMEOUT_MS` (default `30000`)
 - `OWN_SKILL_UPDATE_HOURS` (default `24`)
 - `SOUL_UPDATE_HOURS` (default `24`)
+- `REFLECTION_UPDATE_HOURS` (default `12`)
+- `MEMORY_INGEST_EVERY_TURNS` (default `2`)
+- `MEMORY_INGEST_MIN_CHARS` (default `140`)
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOW_SHELL` (default `false`)
 - `ALLOW_SKILL_INSTALL` (present in config; default `false`)
 - `DATA_DIR` (default `./data`)
-- `DB_PATH` (default `./db/agent.json`)
+- `DB_PATH` (default `./db/agent.json`, JSON state file)
+- `VECTOR_DB_PATH` (default `./db/memory.sqlite`)
+- `SQLITE_VEC_EXTENSION` (optional path to `sqlite-vec` extension library)
 - `MAX_MESSAGES` (default `200`)
 - `RECENT_MESSAGES` (default `40`)
 
@@ -145,8 +152,71 @@ Behavior summary:
 - `human2.md` may be appended with profile updates over time.
 - `ownskill.md` is refreshed periodically (`OWN_SKILL_UPDATE_HOURS`).
 - `soul.md` is refreshed periodically (`SOUL_UPDATE_HOURS`).
-- Conversations/messages/memories are stored in `DB_PATH` (JSON file).
-- When embeddings are enabled, compacted memory recall uses vector similarity.
+- A reflection cycle runs periodically (`REFLECTION_UPDATE_HOURS`) and updates:
+  - semantic memory (`self_reflection` entries in SQLite at `VECTOR_DB_PATH`)
+  - structured files (`ownskill.md`, `human.md`, `human2.md`, `soul.md`)
+    with `Patterns Observed`, `Failures & Lessons`, and `Successful Workflows`
+- Conversations/messages are stored in `DB_PATH` (JSON file).
+- Vector memory is stored in SQLite at `VECTOR_DB_PATH`.
+- If `SQLITE_VEC_EXTENSION` is set and loadable, SQLite can use `sqlite-vec`; otherwise Tiger falls back to in-process cosine ranking over stored embeddings.
+
+ChromaDB is not required for Tiger's default memory stack.
+
+## SQLite Vector Setup
+
+Tiger works out-of-the-box with SQLite-backed memory and no external APIs.
+
+Optional `sqlite-vec` acceleration:
+
+1. Install/build `sqlite-vec` on your host.
+2. Set `SQLITE_VEC_EXTENSION` to the absolute extension file path in `.env`.
+3. Restart Tiger.
+
+Example:
+
+```env
+VECTOR_DB_PATH=./db/memory.sqlite
+SQLITE_VEC_EXTENSION=/absolute/path/to/sqlite_vec
+```
+
+If extension loading fails, Tiger continues using SQLite storage with in-process cosine ranking.
+
+Automatic ingestion and tracking:
+- Tiger ingests one compact durable memory roughly every `MEMORY_INGEST_EVERY_TURNS` turns (or sooner when preference/workflow signals are detected).
+- Tool/skill calls are recorded in the SQLite `skills` table.
+
+Quick commands:
+
+```bash
+npm run memory:init
+npm run memory:stats
+npm run memory:smoke
+npm run memory:migrate
+npm run memory:vec:check
+npm run memory:vec:install
+```
+
+Recommended persistent path:
+
+```env
+VECTOR_DB_PATH=./db/memory.sqlite
+```
+
+Verify active runtime config:
+
+```bash
+rg -n "^VECTOR_DB_PATH=|^SQLITE_VEC_EXTENSION=" .env
+npm run memory:stats
+npm run memory:vec:check
+```
+
+If a report still shows `/tmp/tiger_memory.db`, it is reading an old file or old config snapshot. Tiger uses the path currently set in `.env`.
+
+If you previously used `/tmp/tiger_memory.db`, migrate it:
+
+```bash
+npm run memory:migrate
+```
 
 ## Built-in Tools
 

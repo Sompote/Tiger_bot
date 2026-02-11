@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { execFileSync } = require('child_process');
 const { encryptString } = require('./cryptoEnv');
 
 function exists(p) {
@@ -153,14 +154,32 @@ function envLine(k, v) {
 
     const ownHoursRaw = (await question(rl, 'OWN_SKILL_UPDATE_HOURS (24): ')).trim();
     const soulHoursRaw = (await question(rl, 'SOUL_UPDATE_HOURS (24): ')).trim();
+    const reflectionHoursRaw = (await question(rl, 'REFLECTION_UPDATE_HOURS (12): ')).trim();
+    const ingestTurnsRaw = (await question(rl, 'MEMORY_INGEST_EVERY_TURNS (2): ')).trim();
+    const ingestMinCharsRaw = (await question(rl, 'MEMORY_INGEST_MIN_CHARS (140): ')).trim();
     const ownHours = String(Math.max(1, Number(ownHoursRaw || 24)));
     const soulHours = String(Math.max(1, Number(soulHoursRaw || 24)));
+    const reflectionHours = String(Math.max(1, Number(reflectionHoursRaw || 12)));
+    const ingestTurns = String(Math.max(1, Number(ingestTurnsRaw || 2)));
+    const ingestMinChars = String(Math.max(20, Number(ingestMinCharsRaw || 140)));
 
     const allowShell = normalizeYesNo(await question(rl, 'ALLOW_SHELL (false): '), false);
     const allowSkillInstall = normalizeYesNo(await question(rl, 'ALLOW_SKILL_INSTALL (false): '), false);
 
     const dataDir = (await question(rl, 'DATA_DIR (./data): ')).trim() || './data';
     const dbPath = (await question(rl, 'DB_PATH (./db/agent.json): ')).trim() || './db/agent.json';
+    const usePersistentVectorDb = normalizeYesNo(
+      await question(rl, 'Use persistent SQLite vector DB path? (Y/n): '),
+      true
+    );
+    const defaultVectorDbPath = usePersistentVectorDb ? './db/memory.sqlite' : '/tmp/tiger_memory.db';
+    const vectorDbPath =
+      (await question(rl, `VECTOR_DB_PATH (${defaultVectorDbPath}): `)).trim() || defaultVectorDbPath;
+    const sqliteVecExtension = (await question(rl, 'SQLITE_VEC_EXTENSION (optional path): ')).trim();
+    const runSqliteVecSetup = normalizeYesNo(
+      await question(rl, 'Run sqlite-vec auto-setup now? (pip install + detect path) (y/N): '),
+      false
+    );
 
     const maxMessagesRaw = (await question(rl, 'MAX_MESSAGES (200): ')).trim();
     const recentMessagesRaw = (await question(rl, 'RECENT_MESSAGES (40): ')).trim();
@@ -212,6 +231,9 @@ function envLine(k, v) {
       envLine('KIMI_TIMEOUT_MS', timeoutMs),
       envLine('OWN_SKILL_UPDATE_HOURS', ownHours),
       envLine('SOUL_UPDATE_HOURS', soulHours),
+      envLine('REFLECTION_UPDATE_HOURS', reflectionHours),
+      envLine('MEMORY_INGEST_EVERY_TURNS', ingestTurns),
+      envLine('MEMORY_INGEST_MIN_CHARS', ingestMinChars),
       '',
       '# Encrypted secrets support (optional)',
       envLine('SECRETS_FILE', '.env.secrets.enc'),
@@ -222,6 +244,8 @@ function envLine(k, v) {
       envLine('ALLOW_SKILL_INSTALL', allowSkillInstall ? 'true' : 'false'),
       envLine('DATA_DIR', dataDir),
       envLine('DB_PATH', dbPath),
+      envLine('VECTOR_DB_PATH', vectorDbPath),
+      envLine('SQLITE_VEC_EXTENSION', sqliteVecExtension),
       envLine('MAX_MESSAGES', maxMessages),
       envLine('RECENT_MESSAGES', recentMessages),
       ''
@@ -248,6 +272,24 @@ function envLine(k, v) {
       console.log('When running the bot, you must export SECRETS_PASSPHRASE in your shell or service env.');
     } else {
       console.log('Wrote .env and .env.secrets');
+    }
+
+    if (runSqliteVecSetup) {
+      try {
+        const out = execFileSync(
+          'python3',
+          ['scripts/sqlite_vec_setup.py', '--install', '--write-env'],
+          { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        );
+        console.log(`sqlite-vec setup result: ${String(out || '').trim()}`);
+      } catch (err) {
+        const msg =
+          (err && err.stderr && String(err.stderr).trim()) ||
+          (err && err.stdout && String(err.stdout).trim()) ||
+          (err && err.message) ||
+          'unknown sqlite-vec setup error';
+        console.log(`sqlite-vec setup skipped/failed: ${msg}`);
+      }
     }
 
     console.log('Setup complete. Restart the bot to load the new config.');

@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const { spawn } = require('child_process');
+const os = require('os');
 const { ensureContextFiles } = require('./agent/contextFiles');
+const { startReflectionScheduler } = require('./agent/reflectionScheduler');
+const { initVectorMemory } = require('./agent/db');
 const { startTelegramBot } = require('./telegram/bot');
 const { handleMessage } = require('./agent/mainAgent');
 
@@ -83,8 +86,33 @@ function stopTelegramBackground() {
   process.stdout.write(`Stopped Telegram background bot (supervisor PID ${pid}).\n`);
 }
 
+function printVectorMemoryStatus(vectorStatus) {
+  if (vectorStatus.ok) {
+    const vecMode = vectorStatus.sqliteVecLoaded ? 'enabled' : 'not loaded';
+    const count = Number(vectorStatus?.counts?.memories || 0);
+    process.stdout.write(
+      `Vector memory: sqlite (${vectorStatus.dbPath}) | sqlite-vec: ${vecMode} | memories: ${count}\n`
+    );
+    if (String(vectorStatus.dbPath || '').startsWith(`${os.tmpdir()}${path.sep}`)) {
+      process.stdout.write(
+        'Warning: VECTOR_DB_PATH is under /tmp and may be wiped after restart. Use ./db/memory.sqlite for persistence.\n'
+      );
+    }
+    if (!vectorStatus.sqliteVecLoaded) {
+      process.stdout.write(
+        'Info: sqlite-vec not loaded. Semantic recall still works using cosine fallback.\n'
+      );
+    }
+    return;
+  }
+  process.stdout.write(`Vector memory: json fallback (${vectorStatus.dbPath})\n`);
+}
+
 async function runCli() {
   ensureContextFiles();
+  startReflectionScheduler();
+  const vectorStatus = initVectorMemory();
+  printVectorMemoryStatus(vectorStatus);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -140,6 +168,9 @@ async function main() {
 
   if (isTelegramMode(argv)) {
     ensureContextFiles();
+    startReflectionScheduler();
+    const vectorStatus = initVectorMemory();
+    printVectorMemoryStatus(vectorStatus);
     startTelegramBot();
     process.stdout.write('Telegram bot started.\n');
     return;

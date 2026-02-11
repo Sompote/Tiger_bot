@@ -11,7 +11,13 @@
     "telegram": "node src/cli.js --telegram",
     "telegram:bg": "node src/cli.js --telegram --background",
     "telegram:stop": "node src/cli.js --telegram-stop",
-    "cli": "node src/cli.js"
+    "cli": "node src/cli.js",
+    "memory:init": "python3 scripts/sqlite_memory.py init --db ./db/memory.sqlite",
+    "memory:stats": "python3 scripts/sqlite_memory.py stats --db ./db/memory.sqlite",
+    "memory:smoke": "python3 scripts/sqlite_memory.py add --db ./db/memory.sqlite --conversation-id cli:demo --source preference --content \"No API keys for X/Twitter search\" --embedding-json \"[0.95,0.05,0.0]\" --created-at 1 && python3 scripts/sqlite_memory.py add --db ./db/memory.sqlite --conversation-id cli:demo --source workflow --content \"YouTube to conclusions pipeline\" --embedding-json \"[0.9,0.1,0.0]\" --created-at 2 && python3 scripts/sqlite_memory.py search --db ./db/memory.sqlite --conversation-id cli:demo --query-embedding-json \"[0.94,0.06,0.0]\" --limit 5",
+    "memory:migrate": "node scripts/migrate-vector-db.js --from /tmp/tiger_memory.db --to ./db/memory.sqlite",
+    "memory:vec:check": "python3 scripts/sqlite_vec_setup.py",
+    "memory:vec:install": "python3 scripts/sqlite_vec_setup.py --install --write-env"
   },
   "dependencies": {
     "clawhub": "^0.5.0",

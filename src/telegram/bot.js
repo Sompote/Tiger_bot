@@ -10,6 +10,14 @@ async function safeSendMessage(bot, chatId, text) {
   }
 }
 
+async function safeSendTyping(bot, chatId) {
+  try {
+    await bot.sendChatAction(chatId, 'typing');
+  } catch (err) {
+    process.stderr.write(`[telegram] sendChatAction failed: ${err.message}\n`);
+  }
+}
+
 function startTelegramBot() {
   if (!telegramBotToken) {
     throw new Error('TELEGRAM_BOT_TOKEN is empty.');
@@ -32,14 +40,22 @@ function startTelegramBot() {
 
     if (!text) return;
 
+    let typingTimer = null;
     try {
+      await safeSendTyping(bot, chatId);
+      typingTimer = setInterval(() => {
+        safeSendTyping(bot, chatId);
+      }, 4500);
+
       const reply = await handleMessage({
         platform: 'telegram',
         userId,
         text
       });
+      if (typingTimer) clearInterval(typingTimer);
       await safeSendMessage(bot, chatId, reply);
     } catch (err) {
+      if (typingTimer) clearInterval(typingTimer);
       await safeSendMessage(bot, chatId, `Error: ${err.message}`);
     }
   });
