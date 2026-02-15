@@ -1,0 +1,16 @@
+{
+  "user_id": "local-user",
+  "telegram": {
+    "chat_id": "8172556270",
+    "enabled": true
+  },
+  "preferences": {
+    "language": ["en", "th"],
+    "api_avoidance": true,
+    "ranked_recommendations": true
+  },
+  "security": {
+    "audit_enabled": true,
+    "backup_retention_days": 30
+  }
+}
