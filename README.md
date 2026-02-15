@@ -1,6 +1,10 @@
 # 🐯 Tiger Agent
 
-Made by AI Research Group.
+Made by **AI Research Group**  
+**Department of Civil Engineering**  
+**King Mongkut's University of Technology Thonburi (KMUTT)**
+
+---
 
 Tiger is an Agentic AI assistant for Linux. It is designed for continuous operation (24/7), practical task execution, and long-lived memory.
 From the start, Tiger combines:
@@ -266,4 +270,13 @@ tiger/
 
 ---
 
-**Made with ❤️ by AI Research Group**
+## 👥 Authors
+
+**Made with ❤️ by AI Research Group**  
+Department of Civil Engineering  
+King Mongkut's University of Technology Thonburi (KMUTT)  
+Bangkok, Thailand
+
+---
+
+*[虎 - Hǔ - The Tiger: Powerful, agile, and relentless in pursuit of goals]*
