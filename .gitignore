@@ -1,14 +1,23 @@
-node_modules/
-.venv/
+# Security - Never commit credentials
+.clawhub/lock.json
 .env
-.env.*
-!.env.example
-!.env.secrets.example
-!.env.secrets.enc
+*.key
+*.pem
+*.token
+
+# Database
+tiger_memory.db
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
-*.pid
-db/*.sqlite*
-db/*.db
-db/*.json
 logs/
-data/*.md
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
