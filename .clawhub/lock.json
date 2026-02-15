@@ -16,6 +16,18 @@
     "twitter-sum": {
       "version": "1.0.0",
       "installedAt": 1770705477767
+    },
+    "tiangong-notebooklm-cli": {
+      "version": "0.1.1",
+      "installedAt": 1770772301772
+    },
+    "youtube-transcript": {
+      "version": "1.0.1",
+      "installedAt": 1770772644204
+    },
+    "nano-banana-pro-2": {
+      "version": "0.1.0",
+      "installedAt": 1771053779494
     }
   }
 }

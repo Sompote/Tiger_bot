@@ -1,0 +1,121 @@
+# Human
+
+Describe user preferences, goals, and constraints here.
+
+## Patterns Observed
+- [2026-02-11] Requests ranked comparisons (🥇🥈🥉 format) before selecting tools
+- [2026-02-11] Explicitly avoids API-key requirements when possible (X/Twitter search)
+- [2026-02-11] Cloud environment constraints (no browser, CLI-only operations)
+- [2026-02-11] Recurring YouTube-to-conclusions workflow preference
+- [2026-02-11] Uses both CLI (local-user) and Telegram (8172556270) channels interchangeably
+- [2026-02-11] Asks for 'best' options ranked by rating/score
+
+## Successful Workflows
+- [2026-02-11] youtube-transcript skill extracts video content without authentication
+- [2026-02-11] Web search fallback using site:x.com or site:twitter.com queries avoids API limits
+- [2026-02-11] Four-file memory system (ownskill.md, soul.md, human.md, human2.md) captures preferences persistently
+- [2026-02-11] 12-hour self-training schedule using 'schedule' skill for automated reflection
+- [2026-02-11] Tabular comparisons with feature matrices aid user decision-making
+- [2026-02-11] SearxNG and web scrapers as no-API alternatives for social media search
+- [2026-02-11] User initiates with brief greetings ('hi again') before diving into technical topics
+- [2026-02-11] User shows interest in system internals and memory mechanisms
+- [2026-02-11] User responds well to structured data presentation (tables)
+- [2026-02-11] Returning user pattern: expects context awareness without re-introduction
+- [2026-02-11] Acknowledged return with loaded context (12h training, preferences)
+- [2026-02-11] Used markdown tables for technical architecture explanation
+- [2026-02-11] Proactively identified missing capability (vector DB) and offered solution
+- [2026-02-11] Kept initial response concise as requested ('short and long memory')
+- [2026-02-11] User selected SQLite + sqlite-vec direction over ChromaDB for default vector memory
+- [2026-02-11] User initiates with 'hi again' - returning session, expects context retention
+- [2026-02-11] User asks architectural deep-dives ('why don't you use X')
+- [2026-02-11] User proposes technical alternatives unprompted (SQLite → vector DB)
+- [2026-02-11] Engages positively with tabular comparisons and structured data
+- [2026-02-11] Cloud/no-browser constraint remains active context
+- [2026-02-11] Validates suggestions with 'great question' acknowledgment
+- [2026-02-11] Context pre-loading (12h training, preferences) on session start
+- [2026-02-11] Comparative table format for technical architecture decisions
+- [2026-02-11] Validating user expertise before proceeding ('Great question')
+- [2026-02-11] Offering ranked decision matrix (Option 1/2/3) for next steps
+- [2026-02-11] User prefers SQLite over ChromaDB for vector storage (lighter weight)
+- [2026-02-11] Tests systems before committing to full implementation
+- [2026-02-11] Expects structured schema design (normalized tables with metadata)
+- [2026-02-11] Uses emoji-based visual hierarchy (🥇🥈🥉) in responses
+- [2026-02-11] Avoids API keys for social media (X/Twitter preference noted)
+- [2026-02-11] Validating SQLite availability before schema creation
+- [2026-02-11] Inserting actual user preferences as sample data (X/Twitter API avoidance)
+- [2026-02-11] Providing multiple implementation options with complexity rankings
+- [2026-02-11] Loading previous context (4-file text system) on session start
+- [2026-02-11] User validates system infrastructure before deep usage
+- [2026-02-11] Prefers structured technical summaries (tables, checklists)
+- [2026-02-11] Testing mindset: explicit confirmation of DB state requested
+- [2026-02-11] Markdown table summaries for DB state visualization
+- [2026-02-11] Confidence scoring for stored memories (0.90-0.95 range)
+- [2026-02-11] Explicit what's-working vs what's-missing section formatting
+- [2026-02-11] User periodically validates memory system infrastructure
+- [2026-02-11] User tolerates technical terminology and structured data formats
+- [2026-02-11] User accepts proactive system recommendations when prioritized
+- [2026-02-11] Typo tolerance: 'sqlight' interpreted as 'SQLite' without friction
+- [2026-02-11] Health check command with tabular metric presentation
+- [2026-02-11] Structured priority matrix (Priority/Action/Impact) for recommendations
+- [2026-02-11] Confidence scoring on stored memories (0.90-0.95)
+- [2026-02-11] Proactive identification of missing capabilities before user request
+- [2026-02-11] User performs proactive infrastructure validation checks
+- [2026-02-11] Casual greeting ('hi') precedes technical queries
+- [2026-02-11] User inputs technical terms with typos ('sqlight' vs 'sqlite') but expects correct handling
+- [2026-02-11] User responds well to structured, prioritized action lists with emojis
+- [2026-02-11] Single-turn diagnostic requests with expectation of detailed tabular reporting
+- [2026-02-11] Comprehensive markdown table formatting for technical diagnostics improved readability
+- [2026-02-11] Severity-based prioritization (HIGH/MED/LOW) of recommended actions
+- [2026-02-11] Explicit next-action options (1, 2, 3) reduced cognitive load for user decision
+- [2026-02-11] Status indicators (✅/❌/⚠️) provided at-a-glance system health assessment
+- [2026-02-11] Graceful handling of spelling errors without correction (maintained conversation flow)
+- [2026-02-11] User validates infrastructure before operational use
+- [2026-02-11] Prefers comprehensive technical diagnostics with structured tables
+- [2026-02-11] Initiates system health checks proactively
+- [2026-02-11] Short, direct queries ('hello', 'check for sqlight menory status') followed by detailed responses
+- [2026-02-11] Comprehensive diagnostic reports with severity-prioritized recommendations
+- [2026-02-11] Tabular data presentation for technical metrics
+- [2026-02-11] Proactive next-action suggestions with impact ratings
+- [2026-02-11] Acknowledging typos gracefully ('sqlight' → SQLite)
+- [2026-02-11] Infrastructure validation checks on SQLite status and storage volatility
+- [2026-02-11] Bilingual communication switching between English and Thai
+- [2026-02-11] Preference for no-API/free solutions over paid subscriptions
+- [2026-02-11] Technical architecture inquiries regarding protocols (WebSocket vs HTTP)
+- [2026-02-11] Multi-channel usage: Telegram ID 8172556270 alongside CLI interface
+- [2026-02-11] Structured status reporting with markdown tables and clear status indicators
+- [2026-02-11] Providing ranked decision options with pros/cons tables
+- [2026-02-11] Language mirroring: responding in Thai when user queries in Thai
+- [2026-02-11] Environment-aware recommendations (cloud deployment constraints)
+- [2026-02-12] User accepts alternative tools if explicitly mapped to stated constraints (no-API, cloud environment)
+- [2026-02-12] User requires definitions of unfamiliar tool names before adoption decisions
+- [2026-02-12] Assistant effectively referenced previous context (no-API preference, SQLite usage) in recommendations
+- [2026-02-12] Multilingual interaction pattern: Assistant utilized Thai language in technical explanations
+- [2026-02-12] Structured comparison tables (skill alternatives, ClawRAG vs Pinecone feature matrices)
+- [2026-02-12] ASCII architecture diagrams for visualizing data flow
+- [2026-02-12] Explicit constraint-to-solution mapping (no-API → local embeddings, cloud → no browser auth)
+- [2026-02-12] Providing ready-to-execute installation commands with package manager syntax
+- [2026-02-12] Tagging recommendations with contextual suitability indicators (privacy, cost, setup complexity)
+- [2026-02-13] Proactive context loading upon greeting
+- [2026-02-13] Enumeration of pending technical debt (SQLite migration)
+- [2026-02-13] Constraint verification (no-browser, no-API)
+- [2026-02-14] User references skills by approximate/fuzzy names ('openbanana' instead of 'nano-banana-pro-2')
+- [2026-02-14] User uses Telegram platform identifier 8172556270
+- [2026-02-14] User employs phonetic/typo shorthand ('Nono' for 'nano')
+- [2026-02-14] User accepts recommendation of latest/stable version (v0.1.0) over alternatives
+- [2026-02-14] User requires immediate post-install configuration guidance (API keys, CLI examples)
+- [2026-02-14] Presenting ambiguous matches in markdown table with version, rating, and description for easy comparison
+- [2026-02-14] Explicitly asking 'Want me to install X?' before executing installation
+- [2026-02-14] Providing copy-pasteable CLI commands with full paths immediately after installation
+- [2026-02-14] Including mandatory setup requirements (GEMINI_API_KEY) in post-install block
+- [2026-02-14] Offering multiple configuration methods (env var vs clawbot config set)
+- [2026-02-15] Security-first approach: Requests security improvements before features
+- [2026-02-15] Bilingual workflow: Switches between Thai and English based on context (technical vs. content creation)
+- [2026-02-15] Validation-driven: Explicitly tests implementations (database health, vector search, Thai embeddings)
+- [2026-02-15] Conciseness preference: Multiple requests for 'กระชับ' (concise) content
+- [2026-02-15] Structured data preference: Favors tables, checklists, and command references over prose
+- [2026-02-15] Platform-specific documentation: Requests tailored guides (Hetzner Cloud, Telegram, Facebook)
+- [2026-02-15] Tiered security implementation: HIGH (permissions, gitignore) → MEDIUM (backup, audit logging) prioritization
+- [2026-02-15] Git hygiene: Committing security templates while excluding credentials
+- [2026-02-15] Vector search repair: Python fallback embedding generation (384-dim) enabling semantic Thai→English search
+- [2026-02-15] Competitive positioning: Tiger vs Clawbot comparison highlighting memory persistence and security
+- [2026-02-15] Institutional branding: Adding KMUTT affiliation to documentation
