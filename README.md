@@ -4,6 +4,48 @@ Made by **AI Research Group**
 **Department of Civil Engineering**  
 **King Mongkut's University of Technology Thonburi (KMUTT)**
 
+## 🐯 What is Tiger Bot?
+
+**Tiger Bot** is an AI Agent Framework developed by the **AI Research Group, Department of Civil Engineering, King Mongkut's University of Technology Thonburi (KMUTT)**.
+
+It's not just another chatbot—it's a **"Cognitive Agent"** with long-term memory, self-learning capabilities, and autonomous task execution.
+
+### 🎯 Key Differentiators
+
+| Feature | Tiger Bot | Generic AI Assistants |
+|---------|-----------|---------------------|
+| **Memory** | Persistent lifetime memory (Vector DB) | Forgets when session ends |
+| **Learning** | Self-training every 12 hours | Static, never improves |
+| **Security** | Audit logs + Encryption + Hardened perms | No audit trail |
+| **Channels** | CLI + Telegram simultaneously | Single channel only |
+| **Execution** | Chains multiple skills autonomously | Single command only |
+
+### 💡 Use Cases
+
+1. **Research Assistant** – Extracts YouTube transcripts, searches web, generates reports automatically
+2. **Social Media Manager** – Posts to Facebook, manages Telegram, monitors multiple platforms
+3. **Secure Data Guardian** – Encrypted storage, automated backups, credential protection
+4. **Personal AI** – Learns user patterns, improves recommendations over time through semantic memory
+
+### 🚀 Why Tiger Over Clawbot?
+
+While **OpenClaw/Clawbot** executes one skill and stops, **Tiger** thinks in workflows:
+
+```
+Example: "Summarize this YouTube video"
+→ Clawbot: Extracts transcript → Done
+→ Tiger: Extracts transcript → Searches relevant sources → 
+         Validates facts → Generates conclusion → 
+         Stores in memory for future reference
+```
+
+- Developers needing enterprise-grade automation
+- Researchers handling large-scale data analysis
+- Privacy-conscious users wanting local, self-hosted AI
+- Power users who need AI that *actually remembers* context across sessions
+
+---
+
 ---
 
 Tiger is an Agentic AI assistant for Linux. It is designed for continuous operation (24/7), practical task execution, and long-lived memory.
