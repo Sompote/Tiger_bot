@@ -524,3 +524,96 @@ Store extra human profile details and updates here.
 - Workflow: Vector search repair: Python fallback embedding generation (384-dim) enabling semantic Thai→English search
 - Workflow: Competitive positioning: Tiger vs Clawbot comparison highlighting memory persistence and security
 - Workflow: Institutional branding: Adding KMUTT affiliation to documentation
+
+## Update 2026-02-16T01:38:53.351Z
+- Prefers autonomous execution: wants all steps run automatically without explicit instruction
+- Manages GitHub repositories (Tiger_bot, Token Management project)
+
+## Update 2026-02-16T03:16:42.596Z
+- Uses git version control workflow
+- Thai/English bilingual interface preference
+- Monitors repository sync status and file changes
+
+## Update 2026-02-16T03:19:33.512Z
+- Prefers MIT License for open source projects
+- Works with GitHub repositories and README documentation
+- Values clear licensing and project documentation
+
+## Update 2026-02-16T03:22:20.035Z
+- Working on GitHub project "Tiger_bot" (Sompote/Tiger_bot)
+- Uses MIT License for open source projects
+- Prefers conventional commit messages (e.g., "chore:")
+- Tech stack: Python, Git/GitHub
+
+## Update 2026-02-16T03:23:33.444Z
+- Maintains Tiger_bot repository (GitHub: Sompote/Tiger_bot)
+- Uses Thai language mixed with English technical terms
+- Works with Git CLI including force push/rebase workflows
+
+## Update 2026-02-16T03:29:26.798Z
+• Git/GitHub: Auto-commit/push system configured and operational
+• Repository: Sompote/Tiger_bot (MIT License managed)
+• Technical context: Token management, licensing workflow
+• Language: Comfortable with Thai/English bilingual technical responses
+
+## Update 2026-02-16T03:32:22.671Z
+- Communicates in Thai-English mixed language
+- Prefers visual/icons over long text descriptions
+- Working with MIT-licensed open source projects
+
+## Update 2026-02-16T03:33:39.328Z
+- Primary language: Thai (communicates in Thai script)
+- Project: Maintains GitHub repository "Tiger_bot" (Sompote/Tiger_bot)
+- Documentation style: Prefers minimalist, visual formatting (badge icons over verbose text)
+- Technical workflow: Uses Git with descriptive commit messages
+
+## Update 2026-02-16T03:37:42.692Z
+- Technical preferences: Token management with hourly rate limiting, automatic API failover on rate limits
+- Configuration style: Environment-based (.env) settings for API keys and thresholds
+- System design: Multi-API fallback architecture with user-defined rate limits
+
+## Update 2026-02-16T03:39:40.143Z
+- Project context: Working on `/root/tiger/` codebase
+- Current focus: Implementing Token Management system (referencing README specs)
+- Language preference: Thai (or bilingual Thai/English communication)
+- Workflow style: Uses AI-assisted development with file system function calls
+- Technical approach: Reads documentation first before system implementation
+
+## Update 2026-02-16T03:42:20.619Z
+- Building "Tiger Bot" project: multi-provider AI API token management system with failover
+- Uses Gemini, OpenRouter, Claude APIs with environment-based config
+- Prefers concise technical continuation without lengthy explanations
+- Working in Thai/English bilingual context
+
+## Update 2026-02-16T03:47:49.796Z
+- Developing token management features
+- Requests README/documentation updates to match implementation
+- Working in /root/tiger/ project directory
+
+## Update 2026-02-16T03:49:31.447Z
+• Project: Tiger (Git-based repo)
+• Uses conventional commit format (e.g., "docs:...")
+• Working with .env configuration & token management
+
+## Update 2026-02-16T03:56:38.116Z
+- Language preference: Thai (system status reports)
+- Uses automated git workflows (auto-commit/push)
+- Maintains open source projects (MIT License)
+- Working on token management documentation
+
+## Update 2026-02-16T03:59:21.032Z
+- Maintains GitHub repo: Sompote/Tiger_bot (bot project)
+- Working on token management features/documentation
+- Uses Thai language for technical communications
+- Git workflow: force commits and direct main branch pushes
+
+## Update 2026-02-16T04:08:11.292Z
+- Project: tiger (repo at /root/tiger)
+- Uses Git version control
+- CLI-based development workflow
+
+## Update 2026-02-16T04:09:31.953Z
+• Project context: Working on 'tiger' repo (path: /root/tiger)
+• Interested in: Token Management/auth documentation & features
+• Uses git version control for tracking changes
+• Language context: Thai may be relevant/preferred (assistant used Thai)
