@@ -620,3 +620,152 @@ Store extra human profile details and updates here.
 
 ## Update 2026-02-16T04:14:20.344Z
 - Prefers automated reporting/processes over manual updates
+
+## Update 2026-02-16T04:19:27.480Z
+• Develops API infrastructure with rate limiting & auto-failover mechanisms
+• Builds Python backend systems (token_manager.py, state persistence)
+• Implements DevOps practices: deployment tracking, env configuration
+• Focuses on system reliability & fault-tolerant architecture
+
+## Update 2026-02-16T06:34:14.791Z
+- Interested in codebase metrics (line-of-code counts, file statistics)
+- Analyzing project structure and repository scale
+- Prefers concise technical summaries
+
+## Update 2026-02-16T06:38:56.789Z
+- Prefers thorough, detailed verification of all files/projects
+- Works with mixed tech stacks (Python, Markdown, config, shell scripts)
+- Values structured output with visual categorization (emojis/icons)
+- Expects comprehensive metrics (line counts, file breakdowns by type)
+- May have occasional typos in quick messages ("alll")
+
+## Update 2026-02-16T06:42:08.156Z
+- Python developer: agent systems, token management, database operations
+- Project structure: organized code/docs/config separation
+- Uses .env config and JSON data storage
+- Maintains documentation standards (README, LICENSE)
+
+## Update 2026-02-16T06:47:34.716Z
+- Works with Python and Git version control
+- Troubleshoots remote repository file tracking and .gitignore issues
+- Context indicates possible Thai language proficiency or regional setting
+
+## Update 2026-02-16T06:48:33.162Z
+- Developer: Python project "tiger" with modular skills architecture
+- Communication style: Prefers ultra-concise commands (e.g., single-word "Run")
+- Technical context: Git repos, shell debugging, /root/tiger workspace
+- Language: Possibly Thai-speaking or working with Thai content
+
+## Update 2026-02-16T06:51:54.124Z
+- Python developer (AI/agents focus)
+- Uses Git for version control
+- Prefers concise, directive communication style
+
+## Update 2026-02-16T07:03:35.159Z
+- GitHub: Sompote/Tiger_bot
+- Dev env: /root/tiger
+- Language: Thai
+- Auth: GitHub PATs
+
+## Update 2026-02-16T07:04:39.975Z
+• Developer of Tiger_bot project (GitHub: Sompote/Tiger_bot)
+• Tech stack: Python (token_manager.py, tiger_agent.py, db.py)
+• Uses Git automation with PAT (Personal Access Token) auth
+• Working on bot/agent architecture with database backend
+
+## Update 2026-02-16T07:09:02.499Z
+• Develops Python-based agent systems (project: tiger)
+• Uses Git with force push workflows for deployment
+• Implements core backend modules: rate limiting, SQLite memory, vector DB support
+• Project structure: root + skills/ subdirectory
+• Comfortable with shell command automation for DevOps tasks
+
+## Update 2026-02-16T07:09:43.643Z
+• Python developer: AI/agent systems (tiger_agent.py), token management, DB modules
+• Git workflow: commits/pushes to origin/main
+
+## Update 2026-02-16T07:10:47.652Z
+- Always verify/use latest git commits, not old/cached references
+- Require accuracy in version control details (commit hashes, branches)
+
+## Update 2026-02-16T07:11:44.100Z
+• Developing "Tiger Agent" Python AI project (v1.0)
+• Building token management & database systems
+• Active git user (conventional commits, main branch)
+
+## Update 2026-02-16T07:29:17.112Z
+- Works with Git/GitHub (repo: Tiger_bot, user: Sompote)
+- Uses force push workflows (monitor for Git safety practices)
+- Manages GitHub Personal Access Tokens for API access
+- Non-native English speaker (concise, occasional grammar gaps)
+- Troubleshoots Git remote sync/push visibility issues
+
+## Update 2026-02-16T07:30:55.347Z
+• GitHub repo: Sompote/Tiger_bot
+• Local project path: /root/tiger
+• Stack: Python
+• Requires GitHub token/auth troubleshooting
+
+## Update 2026-02-16T07:38:38.627Z
+• GitHub repo: Sompote/Tiger_bot
+• Working directory: /root/tiger
+• Language: Thai (or accepts Thai responses)
+• Performs git force push operations
+
+## Update 2026-02-16T07:39:24.537Z
+- GitHub: Sompote (repo: Tiger_bot)
+- Project: Tiger Agent v1.0 (Python)
+- Core modules: token_manager.py, tiger_agent.py, db.py
+- Uses token-based GitHub auth
+- Security conscious (audit.sh, SECURITY.md, LICENSE)
+
+## Update 2026-02-16T07:43:20.179Z
+- GitHub user: Sompote (repo: Tiger_bot)
+- Language: Thai (communicates in Thai)
+- Tech stack: Git/GitHub, API debugging, Python
+- Activity: Troubleshooting git push/web update issues
+
+## Update 2026-02-16T07:44:32.408Z
+• Tiger_bot Python project maintainer
+• Stack: db.py, tiger_agent.py, token_manager.py
+• Git troubleshooting: resolving .py file push failures
+• Thai/English bilingual context
+
+## Update 2026-02-16T07:45:41.505Z
+- Tiger Agent v1.0 project: Python modular system (token_manager, tiger_agent, db modules)
+- Git/GitHub workflow: troubleshooting push issues ("up-to-date" but missing files), uses PAT auth
+- Thai-speaking developer (Sompote)
+- Technical focus: Git internals (reflog, index), GitHub REST API, force-push troubleshooting
+
+## Update 2026-02-16T08:13:47.294Z
+- User communicates in Thai
+- Working with Tiger agent project (directory: /root/tiger)
+- Queries about file locations and project structure
+
+## Update 2026-02-16T08:20:54.814Z
+- GitHub repo: Sompote/Tiger_bot (Tiger-agent project)
+- Core Python files: db.py, tiger_agent.py, token_manager.py
+- Workflow: Local dev → GitHub API push (token-based auth)
+- Common issue: Files missing from remote despite local existence
+- Solution pattern: Direct API upload with base64 encoding + SHA check for updates
+
+## Update 2026-02-16T08:45:37.959Z
+- Primary language: Thai
+- GitHub proficiency: Beginner (unfamiliar with blob/tree URL distinctions)
+- Domain interest: Python AI/agent development (investigating Tiger_bot repository)
+- Technical context: Searching for specific source files (tiger_agent.py, db.py) in GitHub repositories
+
+## Update 2026-02-16T10:19:10.332Z
+- Git workflow: Study specific commit SHAs (e.g., cf1e090) to replicate successful push patterns
+- Git push preference: Uses --force-with-lease over --force for safety
+- Commit style: Conventional commits format ("feat: add core Python modules")
+- Tech stack: Python development, GitHub API integration
+- Methodology: Analyze remote commit details via API before applying locally
+- Repo pattern: Works with Tiger_bot repository structure
+- Verification habit: Confirms GitHub state via API after push operations
+
+## Update 2026-02-16T11:14:50.801Z
+- Tiger Agent bot project (GitHub: Sompote/Tiger_bot, Python)
+- Git workflow: prefers force-with-lease push method (cf1e090)
+- Language: Thai/English bilingual
+- Stack: Python modules (db.py, tiger_agent.py, token_manager.py)
