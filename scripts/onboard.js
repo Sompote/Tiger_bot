@@ -42,7 +42,7 @@ async function askHidden(prompt) {
         buf += ch; stdout.write('*');
       }
     }
-    function cleanup() { stdin.off('data', onData); stdin.setRawMode(false); stdin.pause(); }
+    function cleanup() { stdin.off('data', onData); stdin.setRawMode(false); stdin.resume(); }
     stdin.on('data', onData);
   });
 }
@@ -181,7 +181,7 @@ Config will be saved to: ${TIGER_HOME}
   }
 
   // ── Active provider ────────────────────────────────────────────────────────
-  console.log('\nAvailable providers: kimi, zai (Zhipu GLM-5), minimax, claude, moonshot');
+  console.log('\nAvailable providers: kimi, zai (Zhipu GLM-4.7), minimax, claude, moonshot');
   const activeProv = (await ask('Active provider (zai): ')).trim() || 'zai';
   const provOrder = (await ask(`Provider fallback order (${activeProv},claude,kimi,minimax,moonshot): `)).trim()
     || `${activeProv},claude,kimi,minimax,moonshot`;
@@ -231,8 +231,8 @@ Config will be saved to: ${TIGER_HOME}
     '',
     '# ── Z.ai (Zhipu GLM)',
     envLine('ZAI_API_KEY', zaiKey),
-    envLine('ZAI_BASE_URL', 'https://open.bigmodel.cn/api/paas/v4'),
-    envLine('ZAI_MODEL', 'glm-5'),
+    envLine('ZAI_BASE_URL', 'https://api.z.ai/api/coding/paas/v4'),
+    envLine('ZAI_MODEL', 'glm-4.7'),
     envLine('ZAI_TIMEOUT_MS', '30000'),
     '',
     '# ── MiniMax',

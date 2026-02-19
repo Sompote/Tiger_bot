@@ -1,6 +1,6 @@
 {
   "name": "tiger-agent",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Cognitive AI agent with persistent memory, multi-provider LLM, and Telegram bot",
   "type": "commonjs",
   "main": "src/cli.js",
