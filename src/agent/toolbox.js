@@ -7,7 +7,8 @@ const { listSkills, loadSkill, clawhubSearch, clawhubInstall } = require('./skil
 const { runSubAgentBatch } = require('./subAgent');
 
 const execAsync = promisify(exec);
-const skillsDir = path.resolve('./skills');
+const rootDir = process.env.TIGER_HOME || process.cwd();
+const skillsDir = path.resolve(rootDir, 'skills');
 
 function toAbsolutePath(inputPath) {
   return path.resolve(String(inputPath || '.'));
@@ -113,7 +114,7 @@ async function clawhubSearchTool(args = {}) {
   return clawhubSearch({
     query: args.query,
     limit: args.limit,
-    workdir: args.workdir || process.cwd(),
+    workdir: args.workdir || rootDir,
     dir: args.dir || 'skills',
     timeout_ms: args.timeout_ms
   });
@@ -124,7 +125,7 @@ async function clawhubInstallTool(args = {}) {
     slug: args.slug,
     version: args.version,
     force: args.force,
-    workdir: args.workdir || process.cwd(),
+    workdir: args.workdir || rootDir,
     dir: args.dir || 'skills',
     timeout_ms: args.timeout_ms
   });

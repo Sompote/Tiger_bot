@@ -4,7 +4,8 @@ const { execFile } = require('child_process');
 const { promisify } = require('util');
 
 const execFileAsync = promisify(execFile);
-const localClawhubBin = path.resolve(process.cwd(), 'node_modules', '.bin', 'clawhub');
+// Resolve clawhub from the package's own node_modules (works for both global and local installs)
+const localClawhubBin = path.resolve(__dirname, '..', '..', 'node_modules', '.bin', 'clawhub');
 
 function listSkills(baseDir) {
   if (!fs.existsSync(baseDir)) return [];
