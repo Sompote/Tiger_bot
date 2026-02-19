@@ -108,6 +108,21 @@ function getCurrentProvider() {
 }
 
 /**
+ * Set the daily token limit for a provider at runtime.
+ * limit = 0 means unlimited. Returns { ok } or { ok: false, error }.
+ */
+function setLimit(id, limit) {
+  ensureInit();
+  const known = ['kimi', 'moonshot', 'zai', 'minimax', 'claude'];
+  if (!known.includes(id)) return { ok: false, error: `Unknown provider: ${id}` };
+  const n = Number(limit);
+  if (isNaN(n) || n < 0) return { ok: false, error: 'Limit must be a non-negative number (0 = unlimited)' };
+  state.limits[id] = Math.floor(n);
+  saveUsageFile();
+  return { ok: true };
+}
+
+/**
  * Manually switch to a named provider.
  * Returns { ok, provider } or { ok: false, error }
  */
@@ -214,6 +229,7 @@ module.exports = {
   init,
   getCurrentProvider,
   setProvider,
+  setLimit,
   recordTokens,
   isOverLimit,
   getNextCandidates,

@@ -76,6 +76,47 @@ function handleApiCommand(arg) {
   return `✅ Switched to *${p.name}* (\`${target}\`)\nModel: \`${p.chatModel}\``;
 }
 
+// ─── /limit command ───────────────────────────────────────────────────────────
+
+function handleLimitCommand(arg) {
+  if (!arg) {
+    const status = tokenManager.getStatus();
+    const lines = ['⚙️ *Token Limits* (0 = unlimited)', ''];
+    for (const s of status) {
+      const limitStr = s.limit > 0 ? s.limit.toLocaleString() : '∞ unlimited';
+      const active = s.active ? ' ✅' : '';
+      lines.push(`\`${s.id}\`: ${limitStr}${active}`);
+    }
+    lines.push('');
+    lines.push('Use `/limit <provider> <number>` to set a limit.');
+    lines.push('Use `/limit <provider> 0` for unlimited.');
+    lines.push('Providers: ' + KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', '));
+    return lines.join('\n');
+  }
+
+  const parts = arg.trim().split(/\s+/);
+  if (parts.length !== 2) {
+    return '❌ Usage: `/limit <provider> <number>`\nExample: `/limit claude 0`';
+  }
+
+  const [providerArg, valueArg] = parts;
+  const id = providerArg.toLowerCase();
+  if (!KNOWN_PROVIDERS.includes(id)) {
+    return `❌ Unknown provider: \`${id}\`\nAvailable: ${KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', ')}`;
+  }
+
+  const n = Number(valueArg);
+  if (isNaN(n) || n < 0 || !Number.isFinite(n)) {
+    return '❌ Limit must be a non-negative number. Use `0` for unlimited.';
+  }
+
+  const result = tokenManager.setLimit(id, n);
+  if (!result.ok) return `❌ ${result.error}`;
+
+  const limitStr = n === 0 ? '∞ unlimited' : n.toLocaleString() + ' tokens/day';
+  return `✅ *${id}* limit set to *${limitStr}*`;
+}
+
 // ─── /tokens command ──────────────────────────────────────────────────────────
 
 function handleTokensCommand() {
@@ -102,6 +143,7 @@ function startTelegramBot() {
   bot.setMyCommands([
     { command: 'api',    description: 'Show or switch active API provider' },
     { command: 'tokens', description: 'Show token usage for today' },
+    { command: 'limit',  description: 'Show or set daily token limit per provider' },
     { command: 'help',   description: 'Show all available commands' }
   ]).catch((err) => {
     process.stderr.write(`[telegram] setMyCommands failed: ${err.message}\n`);
@@ -127,14 +169,20 @@ function startTelegramBot() {
     const MD = { parse_mode: 'Markdown' };
 
     // ── Slash commands ────────────────────────────────────────────────────
-    if (text.startsWith('/api')) {
-      const arg = text.slice(4).trim() || null;
+    if (text.startsWith('/api') || text.startsWith('/ap ') || text === '/ap') {
+      const arg = text.startsWith('/api') ? text.slice(4).trim() || null : text.slice(3).trim() || null;
       await safeSend(bot, chatId, handleApiCommand(arg), MD);
       return;
     }
 
     if (text === '/tokens' || text === '/token') {
       await safeSend(bot, chatId, handleTokensCommand(), MD);
+      return;
+    }
+
+    if (text.startsWith('/limit')) {
+      const arg = text.slice(6).trim() || null;
+      await safeSend(bot, chatId, handleLimitCommand(arg), MD);
       return;
     }
 
@@ -145,11 +193,11 @@ function startTelegramBot() {
         '/api \\- Show current provider & token stats',
         '/api `<name>` \\- Switch active API provider',
         '/tokens \\- Show token usage for today',
+        '/limit \\- Show daily token limits per provider',
+        '/limit `<name> <n>` \\- Set limit \\(0 = unlimited\\)',
         '/help \\- Show this message',
         '',
-        '*Available providers:* ' + KNOWN_PROVIDERS.join(', '),
-        '',
-        '_Token limits & auto\\-switch configured in .env_'
+        '*Available providers:* ' + KNOWN_PROVIDERS.join(', ')
       ].join('\n');
       await safeSend(bot, chatId, helpText, { parse_mode: 'MarkdownV2' });
       return;

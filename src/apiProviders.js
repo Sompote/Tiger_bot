@@ -155,13 +155,18 @@ function buildProviders(env) {
 
     zai: {
       id: 'zai',
-      name: 'Z.ai (Zhipu)',
-      baseUrl: (env.ZAI_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4').replace(/\/$/, ''),
-      chatModel: env.ZAI_MODEL || 'glm-5',
+      name: 'Z.ai',
+      baseUrl: (env.ZAI_BASE_URL || 'https://api.z.ai/api/coding/paas/v4').replace(/\/$/, ''),
+      chatModel: env.ZAI_MODEL || 'glm-4.7',
       embedModel: env.ZAI_EMBED_MODEL || '',
       apiKey: env.ZAI_API_KEY || '',
       userAgent: '',
-      authHeaders: (key) => ({ Authorization: `Bearer ${zhipuJwt(key)}` }),
+      // api.z.ai uses plain Bearer; old bigmodel.cn used Zhipu JWT
+      authHeaders: (key) => {
+        const baseUrl = (env.ZAI_BASE_URL || '').toLowerCase();
+        if (baseUrl.includes('bigmodel.cn')) return { Authorization: `Bearer ${zhipuJwt(key)}` };
+        return { Authorization: `Bearer ${key}` };
+      },
       chatPath: '/chat/completions',
       embedPath: '/embeddings',
       formatRequest: standardFormat,

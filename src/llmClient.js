@@ -21,39 +21,56 @@ const tokenManager = require('./tokenManager');
 
 // ─── Low-level fetch wrapper ─────────────────────────────────────────────────
 
-async function fetchProvider(provider, endpoint, body) {
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchProvider(provider, endpoint, body, maxRetries = 3) {
   const key = provider.apiKey;
   const headers = { 'Content-Type': 'application/json', ...provider.authHeaders(key) };
   if (provider.userAgent) headers['User-Agent'] = provider.userAgent;
 
-  const timeout = provider.timeout || 30000;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeout);
-
-  let res;
-  try {
-    res = await fetch(`${provider.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal: ctrl.signal
-    });
-  } catch (err) {
-    clearTimeout(timer);
-    if (err && err.name === 'AbortError') {
-      throw Object.assign(new Error(`Timeout after ${timeout}ms (${provider.name})`), { status: 0 });
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.min(attempt * 2000, 10000); // 2s, 4s, 6s … capped at 10s
+      process.stderr.write(`[llm] 429 on ${provider.name}, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})\n`);
+      await sleep(delay);
     }
-    throw Object.assign(new Error(`Network error (${provider.name}): ${err.message}`), { status: 0 });
-  } finally {
-    clearTimeout(timer);
+
+    const timeout = provider.timeout || 30000;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeout);
+
+    let res;
+    try {
+      res = await fetch(`${provider.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      if (err && err.name === 'AbortError') {
+        throw Object.assign(new Error(`Timeout after ${timeout}ms (${provider.name})`), { status: 0 });
+      }
+      throw Object.assign(new Error(`Network error (${provider.name}): ${err.message}`), { status: 0 });
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      lastErr = Object.assign(new Error(`HTTP ${res.status} from ${provider.name}: ${text}`), { status: res.status });
+      if (res.status === 429 && attempt < maxRetries) continue; // retry on rate limit
+      throw lastErr;
+    }
+
+    return res.json();
   }
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw Object.assign(new Error(`HTTP ${res.status} from ${provider.name}: ${text}`), { status: res.status });
-  }
-
-  return res.json();
+  throw lastErr;
 }
 
 // ─── chatCompletion ──────────────────────────────────────────────────────────
@@ -63,7 +80,7 @@ async function chatCompletion(messages, options = {}) {
   const activeId = tokenManager.getCurrentProvider();
   const candidates = [activeId, ...tokenManager.getNextCandidates(activeId)];
 
-  let lastError = null;
+  let firstError = null;
 
   for (const providerId of candidates) {
     if (!providerId) continue;
@@ -81,7 +98,7 @@ async function chatCompletion(messages, options = {}) {
     try {
       data = await fetchProvider(provider, provider.chatPath, body);
     } catch (err) {
-      lastError = err;
+      if (!firstError) firstError = err; // keep the active provider's error
 
       // 429 = rate limit, 403 = quota exhausted — both warrant a fallback
       if (err.status === 429 || err.status === 403) {
@@ -93,9 +110,8 @@ async function chatCompletion(messages, options = {}) {
         continue;
       }
 
-      // Any other error: try next candidate silently; surface only if all fail
-      lastError = err;
-      continue;
+      // Any other error (auth, network, server error) — surface immediately
+      throw err;
     }
 
     const { message, tokens } = provider.parseResponse(data);
@@ -114,7 +130,7 @@ async function chatCompletion(messages, options = {}) {
     return message;
   }
 
-  throw lastError || new Error('All providers failed or exhausted.');
+  throw firstError || new Error('All providers failed or exhausted.');
 }
 
 // ─── embedText ───────────────────────────────────────────────────────────────
