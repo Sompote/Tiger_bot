@@ -10,13 +10,20 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.2.0
+## 🆕 What's New — v0.2.3
+
+- **ClawHub skill install fixed** — `clawhub_install` and `clawhub_search` now work correctly when installed via `npm install -g`
+- **No required API keys** — `tiger onboard` skips providers with no key; any single provider is enough to start
+- **`/limit` Telegram command** — set per-provider daily token limits from chat without restarting
+- **Soul & ownskill refresh fixed** — 24-hour regeneration timer now uses DB timestamps, not file mtime, so reflection appends no longer block the update cycle
+
+### v0.2.0
 
 - **npm global install** — `npm install -g tiger-agent`, no git clone needed
 - **Multi-provider LLM** — 5 providers (Kimi, Z.ai, MiniMax, Claude, Moonshot) with auto-fallback
 - **Daily token limits** — per-provider limits with automatic switching at UTC midnight
 - **`tiger` CLI** — unified command: `tiger onboard`, `tiger start`, `tiger telegram`, `tiger stop`
-- **Telegram `/api` & `/tokens`** — switch providers and monitor usage from chat
+- **Telegram `/api`, `/tokens`, `/limit`** — manage providers and usage from chat
 - **Encrypted secrets** — optional at-rest encryption for API keys
 
 ---
@@ -258,6 +265,27 @@ Without it, Tiger falls back to cosine similarity in Python — slower but fully
 | **Shell** | `run_shell` (requires `ALLOW_SHELL=true`) |
 | **Skills** | `list_skills`, `load_skill`, `clawhub_search`, `clawhub_install` |
 | **Orchestration** | `run_sub_agents` |
+
+### ClawHub Skills
+
+Tiger can search and install skills from [ClawHub](https://clawhub.dev) — a community registry of reusable agent skills. The `clawhub` CLI is bundled with Tiger, no separate install needed.
+
+Enable skill install in `~/.tiger/.env`:
+
+```env
+ALLOW_SKILL_INSTALL=true
+```
+
+Then just ask Tiger in chat:
+
+```
+Search for a web search skill on clawhub
+Install the web-search skill
+```
+
+Skills are installed to `~/.tiger/skills/` and loaded automatically on demand.
+
+> **Note:** `ALLOW_SKILL_INSTALL=true` must be set during `tiger onboard` or added manually to `~/.tiger/.env`.
 
 ---
 
