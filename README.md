@@ -33,34 +33,6 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 📦 Installation
-
-```bash
-npm install -g tiger-agent
-```
-
----
-
-## 🚀 Quick Start
-
-```bash
-tiger onboard     # First-time setup wizard (run once)
-tiger start       # Start CLI chat
-```
-
-CLI exit: `/exit` or `/quit`
-
-**Telegram bot:**
-
-```bash
-tiger telegram              # Start in foreground
-tiger telegram --background # Start as background daemon
-tiger stop                  # Stop daemon
-tiger status                # Check daemon status
-```
-
----
-
 ## 📋 Requirements
 
 - Node.js 18+ (20+ recommended)
@@ -69,32 +41,86 @@ tiger status                # Check daemon status
 
 ---
 
-## 🎮 Run Modes
+## 📦 Installation
 
-| Mode | Command | Use Case |
-|------|---------|----------|
-| **CLI** | `tiger start` | Interactive terminal chat |
-| **Telegram** | `tiger telegram` | Telegram bot (foreground) |
-| **Background** | `tiger telegram --background` | 24/7 daemon |
-| **Stop** | `tiger stop` | Kill background daemon |
-| **Status** | `tiger status` | Check if daemon is running |
+```bash
+npm install -g tiger-agent
+```
 
-Background logs: `~/.tiger/logs/telegram-supervisor.log`
+All config and runtime data is stored in `~/.tiger/` — nothing written to the npm global directory.
 
 ---
 
-## 🔧 Setup Wizard
+## 🚀 Quick Start
 
-`tiger onboard` creates and configures:
+### 1. Run the setup wizard
 
-- `~/.tiger/.env` — settings and provider config
-- `~/.tiger/.env.secrets` — API keys (mode 600, gitignored)
+```bash
+tiger onboard
+```
 
-Setup options:
-- Choose LLM provider and API keys
-- Persistent vs temporary vector DB
-- Optional `sqlite-vec` acceleration
-- Optional encrypted secrets file
+The wizard will ask for:
+- **Active provider** — which LLM to use by default (e.g. `zai`, `claude`)
+- **Fallback order** — comma-separated list tried when the active provider is rate-limited
+- **API keys** — enter only the providers you have keys for; others are skipped automatically
+- **Telegram bot token** — from [@BotFather](https://t.me/BotFather) on Telegram
+- **Daily token limits** — per-provider caps (0 = unlimited); auto-switches on breach
+- **Shell / skill-install** — optional tool permissions
+
+Config is saved to `~/.tiger/.env` (mode 600).
+
+### 2. Start
+
+**CLI chat:**
+```bash
+tiger start
+```
+Exit with `/exit` or `/quit`.
+
+**Telegram bot (foreground):**
+```bash
+tiger telegram
+```
+
+**Telegram bot (background daemon):**
+```bash
+tiger telegram --background   # start
+tiger status                  # check if running
+tiger stop                    # stop
+```
+
+Logs: `~/.tiger/logs/telegram.out.log`
+
+---
+
+## 🎮 Run Modes
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| **CLI** | `tiger start` | Interactive terminal chat |
+| **Telegram** | `tiger telegram` | Telegram bot (foreground) |
+| **Background** | `tiger telegram --background` | 24/7 daemon with auto-restart |
+| **Stop** | `tiger stop` | Stop background daemon |
+| **Status** | `tiger status` | Check daemon status |
+| **Onboard** | `tiger onboard` | Re-run setup wizard |
+
+---
+
+## 🔧 Setup Wizard Details
+
+`tiger onboard` writes `~/.tiger/.env` with all settings. You can re-run it at any time to update config.
+
+| Wizard prompt | What it sets |
+|---------------|-------------|
+| Active provider | `ACTIVE_PROVIDER` |
+| Fallback order | `PROVIDER_ORDER` |
+| API keys | `ZAI_API_KEY`, `CLAUDE_API_KEY`, etc. |
+| Telegram token | `TELEGRAM_BOT_TOKEN` |
+| Token limits | `ZAI_TOKEN_LIMIT`, `CLAUDE_TOKEN_LIMIT`, etc. |
+| Shell tool | `ALLOW_SHELL` |
+| Skill install | `ALLOW_SKILL_INSTALL` |
+
+> **Tip:** You can also edit `~/.tiger/.env` directly and restart the bot to apply changes.
 
 ---
 
