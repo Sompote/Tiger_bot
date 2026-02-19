@@ -124,22 +124,21 @@ function buildSystemPrompt(contextText, memoriesText) {
     .join('\n');
 }
 
-function shouldRefreshFile(filePath, updateHours) {
-  try {
-    const stat = fs.statSync(filePath);
-    const maxAgeMs = updateHours * 60 * 60 * 1000;
-    return Date.now() - stat.mtimeMs >= maxAgeMs;
-  } catch (err) {
-    return true;
-  }
+const OWNSKILL_META_KEY = 'ownskill_last_updated_ts';
+const SOUL_META_KEY = 'soul_last_updated_ts';
+
+function shouldRefreshByMeta(metaKey, updateHours) {
+  const lastTs = Number(getMeta(metaKey, 0) || 0);
+  if (!lastTs) return true;
+  return Date.now() - lastTs >= updateHours * 60 * 60 * 1000;
 }
 
 function shouldRefreshOwnSkill() {
-  return shouldRefreshFile(ownSkillPath, ownSkillUpdateHours);
+  return shouldRefreshByMeta(OWNSKILL_META_KEY, ownSkillUpdateHours);
 }
 
 async function maybeUpdateOwnSkillSummary(conversationIdValue) {
-  if (!shouldRefreshOwnSkill()) return;
+  if (!shouldRefreshByMeta(OWNSKILL_META_KEY, ownSkillUpdateHours)) return;
 
   const recent = getRecentMessages(conversationIdValue, 80);
   const transcript = recent
@@ -175,10 +174,11 @@ async function maybeUpdateOwnSkillSummary(conversationIdValue) {
   const next = String(message.content || '').trim();
   if (!next) return;
   fs.writeFileSync(path.resolve(ownSkillPath), `${next}\n`, 'utf8');
+  setMeta(OWNSKILL_META_KEY, Date.now());
 }
 
 async function maybeUpdateSoulSummary(conversationIdValue) {
-  if (!shouldRefreshFile(soulPath, soulUpdateHours)) return;
+  if (!shouldRefreshByMeta(SOUL_META_KEY, soulUpdateHours)) return;
 
   const recent = getRecentMessages(conversationIdValue, 80);
   const transcript = recent
@@ -210,6 +210,7 @@ async function maybeUpdateSoulSummary(conversationIdValue) {
   const next = String(message.content || '').trim();
   if (!next) return;
   fs.writeFileSync(path.resolve(soulPath), `${next}\n`, 'utf8');
+  setMeta(SOUL_META_KEY, Date.now());
 }
 
 async function maybeIngestTurnMemory(conversationIdValue, userText, assistantText) {

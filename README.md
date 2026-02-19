@@ -109,6 +109,11 @@ Setup options:
 | `ALLOW_SKILL_INSTALL` | `false` | Enable ClawHub skill install |
 | `VECTOR_DB_PATH` | `~/.tiger/db/memory.sqlite` | SQLite vector DB path |
 | `DATA_DIR` | `~/.tiger/data` | Context files directory |
+| `OWN_SKILL_UPDATE_HOURS` | `24` | Hours between `ownskill.md` regenerations (min 1) |
+| `SOUL_UPDATE_HOURS` | `24` | Hours between `soul.md` regenerations (min 1) |
+| `REFLECTION_UPDATE_HOURS` | `12` | Hours between reflection cycles (min 1) |
+| `MEMORY_INGEST_EVERY_TURNS` | `2` | Ingest durable memory every N conversation turns |
+| `MEMORY_INGEST_MIN_CHARS` | `140` | Minimum combined chars in a turn to trigger memory ingest |
 
 Config lives in `~/.tiger/.env` after running `tiger onboard`.
 
@@ -173,27 +178,49 @@ MOONSHOT_TOKEN_LIMIT=100000
 
 ## 🧠 Memory & Context
 
-Context files loaded every turn (from `~/.tiger/data/`):
+### Context Files
 
-- `soul.md` — Agent personality
-- `human.md` / `human2.md` — User profile
-- `ownskill.md` — Known skills (auto-refreshed every 24h)
+Loaded on every turn from `~/.tiger/data/`:
 
-Auto-refresh cycles:
+| File | Purpose |
+|------|---------|
+| `soul.md` | Agent identity, principles, and stable preferences |
+| `human.md` | User profile — goals, patterns, preferences |
+| `human2.md` | Running update log written after every conversation turn |
+| `ownskill.md` | Known skills, workflows, and lessons learned |
 
-| Cycle | Variable | Default |
-|-------|----------|---------|
-| Skill summary | `OWN_SKILL_UPDATE_HOURS` | 24h |
-| Soul refresh | `SOUL_UPDATE_HOURS` | 24h |
-| Reflection | `REFLECTION_UPDATE_HOURS` | 12h |
-| Memory ingest | `MEMORY_INGEST_EVERY_TURNS` | every N turns |
+### Auto-Refresh Cycles
 
-Vector memory: `~/.tiger/db/memory.sqlite`
+Tiger periodically regenerates these files using the LLM. All durations are configurable in `.env` (minimum 1 hour).
 
-Optional `sqlite-vec` acceleration:
+| Cycle | `.env` Variable | Default | What It Does |
+|-------|----------------|---------|--------------|
+| **Skill summary** | `OWN_SKILL_UPDATE_HOURS` | `24` | Rewrites `ownskill.md` with updated skills, workflows, and lessons derived from recent conversations |
+| **Soul refresh** | `SOUL_UPDATE_HOURS` | `24` | Rewrites `soul.md` to reflect any evolved identity, operating rules, or preferences |
+| **Reflection** | `REFLECTION_UPDATE_HOURS` | `12` | Extracts long-term memory bullets from recent messages and appends them to `soul.md`, `human.md`, `ownskill.md`, and the vector DB |
+| **Memory ingest** | `MEMORY_INGEST_EVERY_TURNS` | `2` | After every N conversation turns, distils durable preference or workflow facts into the vector DB |
+
+> **Note:** Refresh timers for `soul.md` and `ownskill.md` are tracked in the DB (not file modification time), so reflection appends do not reset the 24-hour clock.
+
+Example `.env` — tighten cycles for an active bot:
+
+```env
+OWN_SKILL_UPDATE_HOURS=12
+SOUL_UPDATE_HOURS=12
+REFLECTION_UPDATE_HOURS=6
+MEMORY_INGEST_EVERY_TURNS=2
+MEMORY_INGEST_MIN_CHARS=140
+```
+
+### Vector Memory
+
+Stored in `~/.tiger/db/memory.sqlite`. Optional `sqlite-vec` extension enables fast ANN search:
+
 ```env
 SQLITE_VEC_EXTENSION=/path/to/sqlite_vec
 ```
+
+Without it, Tiger falls back to cosine similarity in Python — slower but fully functional.
 
 ---
 
