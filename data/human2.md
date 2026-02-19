@@ -769,3 +769,52 @@ Store extra human profile details and updates here.
 - Git workflow: prefers force-with-lease push method (cf1e090)
 - Language: Thai/English bilingual
 - Stack: Python modules (db.py, tiger_agent.py, token_manager.py)
+
+## Update 2026-02-18T23:31:45.813Z
+- Summary: User Sompote (telegram:8172556270) is working on the Tiger_bot project (GitHub: Sompote/Tiger_bot, repo path /root/tiger). Primary issues: GitHub PAT expired and git push showing 'Everything up-to-date' without actually updating remote files. Workaround was GitHub REST API direct upload. Files db.py, tiger_agent.py, token_manager.py confirmed uploaded via API but not visible via git push. User also requested Kimi API key change.
+- Pattern: User frequently types 'Run' as a standalone message to execute previously planned commands.
+- Pattern: User's GitHub PAT tokens expire/get revoked; they provide new tokens in plaintext in chat.
+- Pattern: git push reports 'Everything up-to-date' or 'success' but files do not appear on GitHub remote — likely a git local/remote SHA divergence or branch tracking issue.
+- Pattern: GitHub REST API PUT /repos/{owner}/{repo}/contents/{file} successfully uploads files when git push fails.
+- Pattern: User sends many short messages ('Hi', 'Hello') possibly testing connectivity or bot responsiveness.
+- Pattern: User requested switching to Kimi API with a provided API key in plaintext.
+- Lesson: Old GitHub token (redacted) was invalid/expired — always verify token before use.
+- Lesson: git push returning 'Everything up-to-date' is misleading; local commits were not actually reaching remote — need to verify remote SHA matches local SHA after push.
+- Lesson: Simulated/fake shell output was shown to user (file sizes, commit SHAs) without real execution results, causing confusion and distrust.
+- Lesson: API upload showed 201 Created but files disappeared on re-check — possible branch/ref mismatch or repo visibility issue.
+- Lesson: Do not expose or log API keys and GitHub tokens in responses or memory summaries.
+- Lesson: Investigating whether GitHub blocks pushes from certain automation tools (OpenClaw/bot) was requested but not resolved.
+- Workflow: GitHub REST API direct file upload: GET file to retrieve SHA if exists, then PUT with base64 content, message, branch, and sha fields — returned 201 and files appeared in API listing.
+- Workflow: Token verification via GET https://api.github.com/user with Bearer header confirms token validity before operations.
+- Workflow: Checking all branches via GET /repos/{owner}/{repo}/branches and default branch via GET /repos/{owner}/{repo} to confirm correct target branch.
+
+## Update 2026-02-18T23:43:54.574Z
+- Summary: User sent repeated greetings ('Hi' and 'Hello') over ~12 minutes with no substantive conversation or requests made.
+- Pattern: User repeatedly sends simple greetings without following up with a request or question.
+- Pattern: User may be testing the bot, unsure how to interact, or waiting for a response before proceeding.
+- Lesson: No assistant responses are visible; unclear if the bot responded at all, which may explain repeated greetings.
+- Lesson: Lack of engagement or prompt from the assistant may cause users to repeat themselves.
+
+## Update 2026-02-18T23:48:09.407Z
+- Summary: User greeted assistant twice with 'Hi', then cancelled task #1 (GitHub block push check), leaving only the Kimi API key rotation as pending work. The /token command was sent at the end of the session.
+- Pattern: User sends multiple 'Hi' messages to initiate sessions without additional context.
+- Pattern: User is comfortable cancelling tasks with short messages like '1 ไม่ต้อง ทำ'.
+- Pattern: User tends to use slash commands (e.g., /token) during sessions.
+- Lesson: Assistant displayed pending task summaries proactively on 'Hi' — this seems appropriate given the task backlog context.
+- Lesson: A Kimi API key (sk-qgwx...) was previously shared in chat; assistant correctly flagged it for revocation without storing the key.
+- Workflow: Assistant maintained task list across messages and presented it clearly in table format on session start.
+- Workflow: Assistant correctly advised against sharing new API keys in chat and suggested secure alternatives (env variable or .env file).
+
+## Update 2026-02-18T23:50:09.572Z
+- Summary: User checked token configuration for the Tiger project. System has multi-provider LLM setup with Z.ai currently active, Kimi and Claude keys set, MiniMax and Moonshot missing keys.
+- Pattern: User uses /token command to inspect LLM provider configuration
+- Pattern: Project is located at /root/tiger/ with .env config file
+- Pattern: User manages multiple LLM providers with failover ordering
+- Workflow: /token command successfully displays provider status table with keys, models, and daily limits
+
+## Update 2026-02-19T00:00:14.939Z
+- Summary: Brief greeting interaction with user via Telegram. Assistant responded in Thai, offering menu options for provider/API key changes.
+- Pattern: User communicates via Telegram (ID: 8172556270)
+- Pattern: Assistant defaults to Thai language responses for this user
+- Pattern: Assistant proactively offers common action menu on greeting
+- Workflow: Greeting with Thai language response and action menu prompt works as expected

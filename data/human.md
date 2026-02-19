@@ -119,3 +119,27 @@ Describe user preferences, goals, and constraints here.
 - [2026-02-15] Vector search repair: Python fallback embedding generation (384-dim) enabling semantic Thai→English search
 - [2026-02-15] Competitive positioning: Tiger vs Clawbot comparison highlighting memory persistence and security
 - [2026-02-15] Institutional branding: Adding KMUTT affiliation to documentation
+- [2026-02-18] User frequently types 'Run' as a standalone message to execute previously planned commands.
+- [2026-02-18] User's GitHub PAT tokens expire/get revoked; they provide new tokens in plaintext in chat.
+- [2026-02-18] git push reports 'Everything up-to-date' or 'success' but files do not appear on GitHub remote — likely a git local/remote SHA divergence or branch tracking issue.
+- [2026-02-18] GitHub REST API PUT /repos/{owner}/{repo}/contents/{file} successfully uploads files when git push fails.
+- [2026-02-18] User sends many short messages ('Hi', 'Hello') possibly testing connectivity or bot responsiveness.
+- [2026-02-18] User requested switching to Kimi API with a provided API key in plaintext.
+- [2026-02-18] GitHub REST API direct file upload: GET file to retrieve SHA if exists, then PUT with base64 content, message, branch, and sha fields — returned 201 and files appeared in API listing.
+- [2026-02-18] Token verification via GET https://api.github.com/user with Bearer header confirms token validity before operations.
+- [2026-02-18] Checking all branches via GET /repos/{owner}/{repo}/branches and default branch via GET /repos/{owner}/{repo} to confirm correct target branch.
+- [2026-02-18] User repeatedly sends simple greetings without following up with a request or question.
+- [2026-02-18] User may be testing the bot, unsure how to interact, or waiting for a response before proceeding.
+- [2026-02-18] User sends multiple 'Hi' messages to initiate sessions without additional context.
+- [2026-02-18] User is comfortable cancelling tasks with short messages like '1 ไม่ต้อง ทำ'.
+- [2026-02-18] User tends to use slash commands (e.g., /token) during sessions.
+- [2026-02-18] Assistant maintained task list across messages and presented it clearly in table format on session start.
+- [2026-02-18] Assistant correctly advised against sharing new API keys in chat and suggested secure alternatives (env variable or .env file).
+- [2026-02-18] User uses /token command to inspect LLM provider configuration
+- [2026-02-18] Project is located at /root/tiger/ with .env config file
+- [2026-02-18] User manages multiple LLM providers with failover ordering
+- [2026-02-18] /token command successfully displays provider status table with keys, models, and daily limits
+- [2026-02-19] User communicates via Telegram (ID: 8172556270)
+- [2026-02-19] Assistant defaults to Thai language responses for this user
+- [2026-02-19] Assistant proactively offers common action menu on greeting
+- [2026-02-19] Greeting with Thai language response and action menu prompt works as expected

@@ -257,3 +257,49 @@
 - [2026-02-15] Default to secure paths (~/.tiger/) rather than /tmp/ for all storage
 - [2026-02-15] Proactively suggest Thai language testing for NLP features
 - [2026-02-15] Maintain SECURITY.md and audit.sh as standard project files
+- [2026-02-18] User frequently types 'Run' as a standalone message to execute previously planned commands.
+- [2026-02-18] User's GitHub PAT tokens expire/get revoked; they provide new tokens in plaintext in chat.
+- [2026-02-18] git push reports 'Everything up-to-date' or 'success' but files do not appear on GitHub remote — likely a git local/remote SHA divergence or branch tracking issue.
+- [2026-02-18] GitHub REST API PUT /repos/{owner}/{repo}/contents/{file} successfully uploads files when git push fails.
+- [2026-02-18] User sends many short messages ('Hi', 'Hello') possibly testing connectivity or bot responsiveness.
+- [2026-02-18] User requested switching to Kimi API with a provided API key in plaintext.
+- [2026-02-18] Old GitHub token [redacted] was invalid/expired — always verify token before use.
+- [2026-02-18] git push returning 'Everything up-to-date' is misleading; local commits were not actually reaching remote — need to verify remote SHA matches local SHA after push.
+- [2026-02-18] Simulated/fake shell output was shown to user (file sizes, commit SHAs) without real execution results, causing confusion and distrust.
+- [2026-02-18] API upload showed 201 Created but files disappeared on re-check — possible branch/ref mismatch or repo visibility issue.
+- [2026-02-18] Do not expose or log API keys and GitHub tokens in responses or memory summaries.
+- [2026-02-18] Investigating whether GitHub blocks pushes from certain automation tools (OpenClaw/bot) was requested but not resolved.
+- [2026-02-18] GitHub REST API direct file upload: GET file to retrieve SHA if exists, then PUT with base64 content, message, branch, and sha fields — returned 201 and files appeared in API listing.
+- [2026-02-18] Token verification via GET https://api.github.com/user with Bearer header confirms token validity before operations.
+- [2026-02-18] Checking all branches via GET /repos/{owner}/{repo}/branches and default branch via GET /repos/{owner}/{repo} to confirm correct target branch.
+- [2026-02-18] After any git push, immediately verify remote SHA matches local SHA via API before reporting success.
+- [2026-02-18] If git push reports 'Everything up-to-date' but files are missing on remote, suspect branch tracking misconfiguration — check 'git branch -vv' and re-set tracking with 'git push --set-upstream origin main'.
+- [2026-02-18] Use GitHub API file upload as primary fallback when git push fails, but always verify file presence via API GET after upload.
+- [2026-02-18] Never report success until API GET confirms files exist on remote.
+- [2026-02-18] Investigate if ClaWHub/OpenClaw environment has git credential or proxy issues causing silent push failures.
+- [2026-02-18] When user says 'Run', execute all queued shell commands immediately without re-explaining.
+- [2026-02-18] User repeatedly sends simple greetings without following up with a request or question.
+- [2026-02-18] User may be testing the bot, unsure how to interact, or waiting for a response before proceeding.
+- [2026-02-18] No assistant responses are visible; unclear if the bot responded at all, which may explain repeated greetings.
+- [2026-02-18] Lack of engagement or prompt from the assistant may cause users to repeat themselves.
+- [2026-02-18] Respond promptly to initial greeting to prevent repeated messages.
+- [2026-02-18] After greeting, offer a clear prompt or menu to guide the user on what the assistant can do.
+- [2026-02-18] Consider sending a welcome/onboarding message if the user appears stuck after multiple greetings.
+- [2026-02-18] User sends multiple 'Hi' messages to initiate sessions without additional context.
+- [2026-02-18] User is comfortable cancelling tasks with short messages like '1 ไม่ต้อง ทำ'.
+- [2026-02-18] User tends to use slash commands (e.g., /token) during sessions.
+- [2026-02-18] Assistant displayed pending task summaries proactively on 'Hi' — this seems appropriate given the task backlog context.
+- [2026-02-18] A Kimi API key (sk-qgwx...) was previously shared in chat; assistant correctly flagged it for revocation without storing the key.
+- [2026-02-18] Assistant maintained task list across messages and presented it clearly in table format on session start.
+- [2026-02-18] Assistant correctly advised against sharing new API keys in chat and suggested secure alternatives (env variable or .env file).
+- [2026-02-18] After user cancels a task, remove it from pending list immediately and focus solely on remaining tasks.
+- [2026-02-18] Handle /token command — ensure token/session info is displayed if that feature is implemented.
+- [2026-02-18] Avoid re-listing cancelled tasks in future sessions to reduce noise.
+- [2026-02-18] User uses /token command to inspect LLM provider configuration
+- [2026-02-18] Project is located at /root/tiger/ with .env config file
+- [2026-02-18] User manages multiple LLM providers with failover ordering
+- [2026-02-18] /token command successfully displays provider status table with keys, models, and daily limits
+- [2026-02-19] User communicates via Telegram (ID: 8172556270)
+- [2026-02-19] Assistant defaults to Thai language responses for this user
+- [2026-02-19] Assistant proactively offers common action menu on greeting
+- [2026-02-19] Greeting with Thai language response and action menu prompt works as expected
