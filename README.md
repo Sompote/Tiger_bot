@@ -1,15 +1,19 @@
 # 🐯 Tiger Agent
 
-**Made by AI Research Group, Department of Civil Engineering, King Mongkut's University of Technology Thonburi (KMUTT)**
+[![npm version](https://img.shields.io/npm/v/tiger-agent.svg)](https://www.npmjs.com/package/tiger-agent)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
-Tiger is a **Cognitive AI Agent** with persistent long-term memory, multi-provider LLM support, self-learning, and Telegram bot integration — designed for 24/7 autonomous operation on Linux.
+**Cognitive AI Agent** with persistent long-term memory, multi-provider LLM support, self-learning, and Telegram bot integration — designed for 24/7 autonomous operation on Linux.
+
+Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
 ## 🎯 Why Tiger?
 
-| Feature | Tiger Bot | Generic AI Assistants |
-|---------|-----------|----------------------|
+| Feature | Tiger | Generic AI Assistants |
+|---------|-------|-----------------------|
 | **Memory** | Persistent lifetime memory (Vector DB) | Forgets when session ends |
 | **Learning** | Self-training every 12 hours | Static, never improves |
 | **Security** | Audit logs + Encryption + Hardened perms | No audit trail |
@@ -24,24 +28,22 @@ Tiger is a **Cognitive AI Agent** with persistent long-term memory, multi-provid
 npm install -g tiger-agent
 ```
 
-No git clone needed.
-
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-tiger onboard     # First-time setup wizard
+tiger onboard     # First-time setup wizard (run once)
 tiger start       # Start CLI chat
 ```
 
 CLI exit: `/exit` or `/quit`
 
-For Telegram:
+**Telegram bot:**
 
 ```bash
-tiger telegram              # Foreground
-tiger telegram --background # Background daemon
+tiger telegram              # Start in foreground
+tiger telegram --background # Start as background daemon
 tiger stop                  # Stop daemon
 tiger status                # Check daemon status
 ```
@@ -58,13 +60,13 @@ tiger status                # Check daemon status
 
 ## 🎮 Run Modes
 
-| Mode | Global install | From source | Use Case |
-|------|---------------|-------------|----------|
-| **CLI** | `tiger start` | `npm run cli` | Interactive terminal |
-| **Telegram** | `tiger telegram` | `npm run telegram` | Bot foreground |
-| **Background** | `tiger telegram --background` | `npm run telegram:bg` | 24/7 daemon |
-| **Stop** | `tiger stop` | `npm run telegram:stop` | Kill daemon |
-| **Status** | `tiger status` | — | Check daemon |
+| Mode | Command | Use Case |
+|------|---------|----------|
+| **CLI** | `tiger start` | Interactive terminal chat |
+| **Telegram** | `tiger telegram` | Telegram bot (foreground) |
+| **Background** | `tiger telegram --background` | 24/7 daemon |
+| **Stop** | `tiger stop` | Kill background daemon |
+| **Status** | `tiger status` | Check if daemon is running |
 
 Background logs: `~/.tiger/logs/telegram-supervisor.log`
 
@@ -72,12 +74,13 @@ Background logs: `~/.tiger/logs/telegram-supervisor.log`
 
 ## 🔧 Setup Wizard
 
-`tiger onboard` (global) or `npm run setup` (from source) configures:
+`tiger onboard` creates and configures:
 
-- `~/.tiger/.env` — non-secret settings
-- `~/.tiger/.env.secrets` — API keys and tokens (mode 600)
+- `~/.tiger/.env` — settings and provider config
+- `~/.tiger/.env.secrets` — API keys (mode 600, gitignored)
 
-Options during setup:
+Setup options:
+- Choose LLM provider and API keys
 - Persistent vs temporary vector DB
 - Optional `sqlite-vec` acceleration
 - Optional encrypted secrets file
@@ -96,6 +99,8 @@ Options during setup:
 | `VECTOR_DB_PATH` | `~/.tiger/db/memory.sqlite` | SQLite vector DB path |
 | `DATA_DIR` | `~/.tiger/data` | Context files directory |
 
+Config lives in `~/.tiger/.env` after running `tiger onboard`.
+
 ---
 
 ## 🌐 Multi-Provider LLM
@@ -104,15 +109,15 @@ Tiger supports **5 providers** with automatic fallback and daily token limits.
 
 ### Supported Providers
 
-| Provider | ID | Default Model | API Key |
-|----------|----|--------------|---------|
+| Provider | ID | Default Model | API Key Variable |
+|----------|----|--------------|-----------------|
 | Kimi Code | `kimi` | `k2p5` | `KIMI_CODE_API_KEY` |
 | Kimi Moonshot | `moonshot` | `kimi-k1` | `MOONSHOT_API_KEY` |
 | Z.ai (Zhipu) | `zai` | `glm-5` | `ZAI_API_KEY` (format: `id.secret`) |
 | MiniMax | `minimax` | `abab6.5s-chat` | `MINIMAX_API_KEY` |
 | Claude (Anthropic) | `claude` | `claude-sonnet-4-6` | `CLAUDE_API_KEY` |
 
-### `.env` Configuration
+### `.env` Example
 
 ```env
 ACTIVE_PROVIDER=zai
@@ -137,8 +142,8 @@ MOONSHOT_TOKEN_LIMIT=100000
 1. Uses `ACTIVE_PROVIDER` for all requests
 2. On **429** (rate limit) or **403** (quota exceeded) — switches to next in `PROVIDER_ORDER`
 3. When a provider's daily token limit is reached — skipped for the rest of the day
-4. Providers with no API key are silently skipped
-5. Token usage tracked in `~/.tiger/db/token_usage.json`, resets at UTC midnight
+4. Providers with no API key configured are silently skipped
+5. Token usage resets at UTC midnight (`~/.tiger/db/token_usage.json`)
 
 ---
 
@@ -147,7 +152,7 @@ MOONSHOT_TOKEN_LIMIT=100000
 | Command | Description |
 |---------|-------------|
 | `/api` | Show all providers with token usage |
-| `/api <id>` | Switch provider (e.g. `/api claude`) |
+| `/api <id>` | Switch active provider (e.g. `/api claude`) |
 | `/tokens` | Show today's token usage per provider |
 | `/help` | Show all commands |
 
@@ -161,7 +166,7 @@ Context files loaded every turn (from `~/.tiger/data/`):
 - `human.md` / `human2.md` — User profile
 - `ownskill.md` — Known skills (auto-refreshed every 24h)
 
-Auto-refresh cycles (configurable via `.env`):
+Auto-refresh cycles:
 
 | Cycle | Variable | Default |
 |-------|----------|---------|
@@ -170,19 +175,11 @@ Auto-refresh cycles (configurable via `.env`):
 | Reflection | `REFLECTION_UPDATE_HOURS` | 12h |
 | Memory ingest | `MEMORY_INGEST_EVERY_TURNS` | every N turns |
 
-Vector memory DB: `~/.tiger/db/memory.sqlite`
+Vector memory: `~/.tiger/db/memory.sqlite`
 
 Optional `sqlite-vec` acceleration:
 ```env
 SQLITE_VEC_EXTENSION=/path/to/sqlite_vec
-```
-
-Memory commands (from source):
-```bash
-npm run memory:init      # Initialize DB
-npm run memory:stats     # Show stats
-npm run memory:migrate   # Migrate from /tmp/
-npm run memory:vec:check # Check sqlite-vec
 ```
 
 ---
@@ -202,17 +199,19 @@ npm run memory:vec:check # Check sqlite-vec
 
 | Feature | Detail |
 |---------|--------|
-| **Credential Storage** | Externalized to `~/.tiger/.env.secrets` (mode 600) |
+| **Credential Storage** | `~/.tiger/.env.secrets` with mode 600 |
 | **Database Security** | `~/.tiger/db/` with hardened permissions |
 | **Audit Logging** | Sanitized skill logs at `~/.tiger/logs/audit.log` |
 | **Auto Backup** | Daily SQLite backups, 30-day retention |
 | **Secret Rotation** | Built-in 90-day rotation reminders |
 
-### Encrypted Secrets (optional)
+### Optional: Encrypted Secrets
 
 ```bash
-export SECRETS_PASSPHRASE='your-long-passphrase'
-node scripts/encrypt-env.js --in .env.secrets --out .env.secrets.enc
+# Run from ~/.tiger after onboard
+export SECRETS_PASSPHRASE='your-passphrase'
+node $(npm root -g)/tiger-agent/scripts/encrypt-env.js \
+  --in .env.secrets --out .env.secrets.enc
 rm .env.secrets
 ```
 
@@ -239,18 +238,18 @@ rm .env.secrets
 | Bot stuck on one provider | `/api <name>` in Telegram to switch manually |
 | Provider silently skipped | No API key set, or daily limit reached — check `/tokens` |
 | `401` auth error | Wrong or missing API key |
-| `403` quota error | Daily quota exhausted — auto-switches; top up billing or raise `*_TOKEN_LIMIT` |
+| `403` quota error | Daily quota exhausted — auto-switches; raise `*_TOKEN_LIMIT` |
 | `429` rate limit | Auto-switches to next provider in `PROVIDER_ORDER` |
 | Z.ai auth fails | Key must be `id.secret` format (from Zhipu/BigModel console) |
-| Shell tool disabled | Set `ALLOW_SHELL=true` in `.env` |
-| Stuck processes | `pkill -f "node src/cli.js"` then restart |
+| Shell tool disabled | Set `ALLOW_SHELL=true` in `~/.tiger/.env` |
+| Stuck processes | `pkill -f tiger-agent` then restart |
 | Reset token counters | Delete `~/.tiger/db/token_usage.json` and restart |
 
 ---
 
 ## 📁 Data Directory
 
-After global install, all runtime data lives in `~/.tiger/`:
+All runtime data lives in `~/.tiger/`:
 
 ```
 ~/.tiger/
