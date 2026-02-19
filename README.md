@@ -124,7 +124,7 @@ Tiger supports **5 providers** with automatic fallback and daily token limits.
 |----------|----|--------------|-----------------|
 | Kimi Code | `kimi` | `k2p5` | `KIMI_CODE_API_KEY` |
 | Kimi Moonshot | `moonshot` | `kimi-k1` | `MOONSHOT_API_KEY` |
-| Z.ai (Zhipu) | `zai` | `glm-5` | `ZAI_API_KEY` (format: `id.secret`) |
+| Z.ai (Zhipu) | `zai` | `glm-4.7` | `ZAI_API_KEY` (format: `id.secret`) |
 | MiniMax | `minimax` | `abab6.5s-chat` | `MINIMAX_API_KEY` |
 | Claude (Anthropic) | `claude` | `claude-sonnet-4-6` | `CLAUDE_API_KEY` |
 
@@ -165,6 +165,8 @@ MOONSHOT_TOKEN_LIMIT=100000
 | `/api` | Show all providers with token usage |
 | `/api <id>` | Switch active provider (e.g. `/api claude`) |
 | `/tokens` | Show today's token usage per provider |
+| `/limit` | Show daily token limits per provider |
+| `/limit <provider> <n>` | Set daily token limit (0 = unlimited, e.g. `/limit zai 100000`) |
 | `/help` | Show all commands |
 
 ---
