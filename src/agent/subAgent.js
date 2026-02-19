@@ -1,4 +1,4 @@
-const { chatCompletion } = require('../kimiClient');
+const { chatCompletion } = require('../llmClient');
 
 async function runSubAgent(task, contextText) {
   const system = [

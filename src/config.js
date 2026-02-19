@@ -79,7 +79,11 @@ const rawApiKey =
     ? process.env.KIMI_CODE_API_KEY || process.env.KIMI_API_KEY || ''
     : process.env.MOONSHOT_API_KEY || process.env.KIMI_API_KEY || '';
 const kimiApiKey = cleanEnvValue(rawApiKey);
-if (!kimiApiKey) {
+// Only hard-fail on missing kimi key when kimi/moonshot is the active provider.
+// If ACTIVE_PROVIDER is set to another provider, the key is optional.
+const activeProvider = cleanEnvValue(process.env.ACTIVE_PROVIDER || '').toLowerCase();
+const kimiIsActive = !activeProvider || activeProvider === 'kimi' || activeProvider === 'moonshot';
+if (!kimiApiKey && kimiIsActive) {
   if (kimiProvider === 'code') {
     throw new Error('Missing required env: KIMI_CODE_API_KEY (or KIMI_API_KEY)');
   }

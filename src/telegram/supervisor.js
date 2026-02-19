@@ -3,11 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const rootDir = path.resolve(__dirname, '..', '..');
-const logsDir = path.resolve(rootDir, 'logs');
+// Source root (where cli.js lives) — always inside the npm package
+const srcRoot = path.resolve(__dirname, '..', '..');
+// Runtime root (where logs/pids go) — inside TIGER_HOME when installed globally
+const runtimeDir = process.env.TIGER_HOME || process.cwd();
+const logsDir = path.resolve(runtimeDir, 'logs');
 const botLogPath = path.resolve(logsDir, 'telegram.out.log');
-const supervisorPidPath = path.resolve(rootDir, 'tiger-telegram.pid');
-const workerPidPath = path.resolve(rootDir, 'tiger-telegram-worker.pid');
+const supervisorPidPath = path.resolve(runtimeDir, 'tiger-telegram.pid');
+const workerPidPath = path.resolve(runtimeDir, 'tiger-telegram-worker.pid');
 const restartDelayMs = 5000;
 
 let worker = null;
@@ -24,9 +27,9 @@ function writeBufferToLog(buffer) {
 function startWorker() {
   if (stopping) return;
 
-  const cliPath = path.resolve(rootDir, 'src', 'cli.js');
+  const cliPath = path.resolve(srcRoot, 'src', 'cli.js');
   worker = spawn(process.execPath, [cliPath, '--telegram', '--worker'], {
-    cwd: rootDir,
+    cwd: runtimeDir,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe']
   });

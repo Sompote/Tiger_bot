@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { chatCompletion, embedText } = require('../kimiClient');
+const { chatCompletion, embedText } = require('../llmClient');
 const {
   embeddingsEnabled,
   allowShell,

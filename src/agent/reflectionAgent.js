@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { chatCompletion, embedText } = require('../kimiClient');
+const { chatCompletion, embedText } = require('../llmClient');
 const { dataDir, embeddingsEnabled } = require('../config');
 const { addMemory, getMeta, setMeta, getMessagesSince, getRecentMessagesAll } = require('./db');
 

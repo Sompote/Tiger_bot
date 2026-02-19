@@ -10,7 +10,10 @@ const { initVectorMemory } = require('./agent/db');
 const { startTelegramBot } = require('./telegram/bot');
 const { handleMessage } = require('./agent/mainAgent');
 
-const rootDir = path.resolve(__dirname, '..');
+// Source root — always inside the npm package
+const srcRoot = path.resolve(__dirname, '..');
+// Runtime root — inside TIGER_HOME when installed globally, otherwise project root
+const rootDir = process.env.TIGER_HOME || process.cwd();
 const supervisorPidPath = path.resolve(rootDir, 'tiger-telegram.pid');
 
 process.on('unhandledRejection', (reason) => {
@@ -57,7 +60,7 @@ function startTelegramInBackground() {
   fs.mkdirSync(path.resolve(rootDir, 'logs'), { recursive: true });
   const supervisorLogPath = path.resolve(rootDir, 'logs', 'telegram-supervisor.log');
   const logFd = fs.openSync(supervisorLogPath, 'a');
-  const supervisorScript = path.resolve(__dirname, 'telegram', 'supervisor.js');
+  const supervisorScript = path.resolve(srcRoot, 'src', 'telegram', 'supervisor.js');
   const child = spawn(process.execPath, [supervisorScript], {
     cwd: rootDir,
     env: process.env,

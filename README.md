@@ -1,112 +1,50 @@
 # 🐯 Tiger Agent
 
-Made by **AI Research Group**  
-**Department of Civil Engineering**  
-**King Mongkut's University of Technology Thonburi (KMUTT)**
+**Made by AI Research Group, Department of Civil Engineering, King Mongkut's University of Technology Thonburi (KMUTT)**
 
-## 🐯 What is Tiger Bot?
+Tiger is a **Cognitive AI Agent** with persistent long-term memory, multi-provider LLM support, self-learning, and Telegram bot integration — designed for 24/7 autonomous operation on Linux.
 
-**Tiger Bot** is an AI Agent Framework developed by the **AI Research Group, Department of Civil Engineering, King Mongkut's University of Technology Thonburi (KMUTT)**.
+---
 
-It's not just another chatbot—it's a **"Cognitive Agent"** with long-term memory, self-learning capabilities, and autonomous task execution.
-
-### 🎯 Key Differentiators
+## 🎯 Why Tiger?
 
 | Feature | Tiger Bot | Generic AI Assistants |
-|---------|-----------|---------------------|
+|---------|-----------|----------------------|
 | **Memory** | Persistent lifetime memory (Vector DB) | Forgets when session ends |
 | **Learning** | Self-training every 12 hours | Static, never improves |
 | **Security** | Audit logs + Encryption + Hardened perms | No audit trail |
 | **Channels** | CLI + Telegram simultaneously | Single channel only |
 | **Execution** | Chains multiple skills autonomously | Single command only |
 
-### 💡 Use Cases
-
-1. **Research Assistant** – Extracts YouTube transcripts, searches web, generates reports automatically
-2. **Social Media Manager** – Posts to Facebook, manages Telegram, monitors multiple platforms
-3. **Secure Data Guardian** – Encrypted storage, automated backups, credential protection
-4. **Personal AI** – Learns user patterns, improves recommendations over time through semantic memory
-
-### 🚀 Why Tiger Over Clawbot?
-
-While **OpenClaw/Clawbot** executes one skill and stops, **Tiger** thinks in workflows:
-
-```
-Example: "Summarize this YouTube video"
-→ Clawbot: Extracts transcript → Done
-→ Tiger: Extracts transcript → Searches relevant sources → 
-         Validates facts → Generates conclusion → 
-         Stores in memory for future reference
-```
-
-- Developers needing enterprise-grade automation
-- Researchers handling large-scale data analysis
-- Privacy-conscious users wanting local, self-hosted AI
-- Power users who need AI that *actually remembers* context across sessions
-
 ---
 
----
-
-Tiger is an Agentic AI assistant for Linux. It is designed for continuous operation (24/7), practical task execution, and long-lived memory.
-From the start, Tiger combines:
-- an agentic reasoning loop (assistant -> tools -> tool results -> final reply)
-- persistent context files (`human.md`, `human2.md`, `soul.md`)
-- compacted long-term memory with SQLite-backed vector retrieval (default)
-- a self-maintained `ownskill.md` summary that auto-refreshes every 24 hours
-
-Core capabilities:
-- CLI chat mode
-- Telegram bot mode (foreground or background)
-- Local conversation/message state (`db/agent.json` by default) plus SQLite vector memory (`db/memory.sqlite` by default)
-- Tool calling (files, shell, skills, sub-agents)
-- ClawHub skill search/install support
-- OpenClaw-style tool loop (assistant -> tool calls -> tool results -> final synthesis)
-
----
-
-## 🚀 Quick Start (First Run)
+## 📦 Installation
 
 ```bash
-npm install
-npm run setup
-npm run cli
+npm install -g tiger-agent
 ```
 
-CLI exit commands: `/exit` or `/quit`.
+No git clone needed.
 
 ---
 
-## 🔒 Security First
-
-Tiger is built with **security-by-default** principles:
-
-| Feature | Implementation |
-|---------|---------------|
-| 🔐 **Credential Storage** | Externalized to `.env.secrets` (gitignored) |
-| 🛡️ **Database Security** | `~/.tiger/memory/` with `chmod 600` permissions |
-| 📝 **Audit Logging** | Sanitized skill usage logs (`~/.tiger/logs/audit.log`) |
-| 💾 **Auto Backup** | Daily SQLite backups with 30-day retention |
-| 🔒 **Git Hygiene** | Automatic protection for secrets, tokens, and runtime data |
-| 🔄 **Secret Rotation** | Built-in 90-day rotation reminders |
-
-### Quick Security Setup
+## 🚀 Quick Start
 
 ```bash
-# 1. Protect secrets
-cp .env.example .env
-cp .env.secrets.example .env.secrets
-chmod 600 .env.secrets
-
-# 2. Enable encrypted secrets (optional but recommended)
-export SECRETS_PASSPHRASE='your-long-passphrase'
-node scripts/encrypt-env.js --in .env.secrets --out .env.secrets.enc
-
-# 3. Verify database security
-npm run memory:stats
+tiger onboard     # First-time setup wizard
+tiger start       # Start CLI chat
 ```
 
-**[📖 Full Security Documentation →](docs/SECURITY_IMPROVEMENTS.md)**
+CLI exit: `/exit` or `/quit`
+
+For Telegram:
+
+```bash
+tiger telegram              # Foreground
+tiger telegram --background # Background daemon
+tiger stop                  # Stop daemon
+tiger status                # Check daemon status
+```
 
 ---
 
@@ -114,105 +52,135 @@ npm run memory:stats
 
 - Node.js 18+ (20+ recommended)
 - npm
-- Python 3 (used by SQLite memory helper at `scripts/sqlite_memory.py`)
+- Python 3 (for SQLite memory helper)
 
 ---
 
 ## 🎮 Run Modes
 
-| Mode | Command | Use Case |
-|------|---------|----------|
-| **CLI** | `npm run cli` | Interactive terminal |
-| **Telegram** | `npm run telegram` | Bot foreground |
-| **Background** | `npm run telegram:bg` | 24/7 daemon |
-| **Stop BG** | `npm run telegram:stop` | Kill daemon |
+| Mode | Global install | From source | Use Case |
+|------|---------------|-------------|----------|
+| **CLI** | `tiger start` | `npm run cli` | Interactive terminal |
+| **Telegram** | `tiger telegram` | `npm run telegram` | Bot foreground |
+| **Background** | `tiger telegram --background` | `npm run telegram:bg` | 24/7 daemon |
+| **Stop** | `tiger stop` | `npm run telegram:stop` | Kill daemon |
+| **Status** | `tiger status` | — | Check daemon |
 
-Background logs: `logs/telegram-supervisor.log`
+Background logs: `~/.tiger/logs/telegram-supervisor.log`
 
 ---
 
 ## 🔧 Setup Wizard
 
-`npm run setup` creates:
-- `.env` (non-secret settings)
-- `.env.secrets` (API keys/tokens, gitignored) or `.env.secrets.enc` (encrypted)
+`tiger onboard` (global) or `npm run setup` (from source) configures:
 
-Setup options:
-- Persistent vs volatile vector DB (`./db/memory.sqlite` vs `/tmp/`)
-- Optional `sqlite-vec` bootstrap
+- `~/.tiger/.env` — non-secret settings
+- `~/.tiger/.env.secrets` — API keys and tokens (mode 600)
+
+Options during setup:
+- Persistent vs temporary vector DB
+- Optional `sqlite-vec` acceleration
 - Optional encrypted secrets file
-
-Manual setup alternative:
-```bash
-cp .env.example .env
-```
 
 ---
 
 ## 🔑 Environment Variables
 
-Key variables:
-- `KIMI_PROVIDER` (`moonshot` or `code`)
-- `MOONSHOT_API_KEY` / `KIMI_CODE_API_KEY`
-- `TELEGRAM_BOT_TOKEN`
-- `ALLOW_SHELL` (default `false`)
-- `ALLOW_SKILL_INSTALL` (default `false`)
-- `VECTOR_DB_PATH` (default `./db/memory.sqlite`)
-- `DATA_DIR` (default `./data`)
-
-See `.env.example` for complete list.
-
-### Provider Examples
-
-**Moonshot/Open Platform:**
-```env
-KIMI_PROVIDER=moonshot
-MOONSHOT_API_KEY=your_key
-KIMI_BASE_URL=https://api.moonshot.cn/v1
-KIMI_CHAT_MODEL=kimi-k1
-```
-
-**Kimi Code:**
-```env
-KIMI_PROVIDER=code
-KIMI_CODE_API_KEY=your_key
-KIMI_BASE_URL=https://api.kimi.com/coding/v1
-KIMI_CHAT_MODEL=k2p5
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ACTIVE_PROVIDER` | — | Active LLM provider (`kimi`, `zai`, `minimax`, `claude`, `moonshot`) |
+| `PROVIDER_ORDER` | — | Fallback order, comma-separated |
+| `TELEGRAM_BOT_TOKEN` | — | Telegram bot token |
+| `ALLOW_SHELL` | `false` | Enable shell tool |
+| `ALLOW_SKILL_INSTALL` | `false` | Enable ClawHub skill install |
+| `VECTOR_DB_PATH` | `~/.tiger/db/memory.sqlite` | SQLite vector DB path |
+| `DATA_DIR` | `~/.tiger/data` | Context files directory |
 
 ---
 
-## 🧠 Context and Memory
+## 🌐 Multi-Provider LLM
 
-Tiger loads these into system context every turn:
-- `data/soul.md`
-- `data/human.md`
-- `data/human2.md`
-- `data/ownskill.md`
+Tiger supports **5 providers** with automatic fallback and daily token limits.
 
-Auto-refresh cycles:
-- `ownskill.md`: Every `OWN_SKILL_UPDATE_HOURS` (default 24)
-- `soul.md`: Every `SOUL_UPDATE_HOURS` (default 24)
-- Reflection cycle: Every `REFLECTION_UPDATE_HOURS` (default 12)
+### Supported Providers
 
-Storage:
-- Conversations: `DB_PATH` (JSON)
-- Vector memory: `VECTOR_DB_PATH` (SQLite)
-- Auto-ingestion: Every `MEMORY_INGEST_EVERY_TURNS` turns
+| Provider | ID | Default Model | API Key |
+|----------|----|--------------|---------|
+| Kimi Code | `kimi` | `k2p5` | `KIMI_CODE_API_KEY` |
+| Kimi Moonshot | `moonshot` | `kimi-k1` | `MOONSHOT_API_KEY` |
+| Z.ai (Zhipu) | `zai` | `glm-5` | `ZAI_API_KEY` (format: `id.secret`) |
+| MiniMax | `minimax` | `abab6.5s-chat` | `MINIMAX_API_KEY` |
+| Claude (Anthropic) | `claude` | `claude-sonnet-4-6` | `CLAUDE_API_KEY` |
 
-### SQLite Vector Setup
-
-Tiger works out-of-the-box with SQLite. Optional `sqlite-vec` acceleration:
+### `.env` Configuration
 
 ```env
-VECTOR_DB_PATH=./db/memory.sqlite
+ACTIVE_PROVIDER=zai
+PROVIDER_ORDER=zai,claude,kimi,minimax,moonshot
+
+KIMI_CODE_API_KEY=<key>
+ZAI_API_KEY=<key>
+MINIMAX_API_KEY=<key>
+CLAUDE_API_KEY=<key>
+MOONSHOT_API_KEY=<key>
+
+# Daily token limits per provider (0 = unlimited)
+KIMI_TOKEN_LIMIT=100000
+ZAI_TOKEN_LIMIT=100000
+MINIMAX_TOKEN_LIMIT=100000
+CLAUDE_TOKEN_LIMIT=500000
+MOONSHOT_TOKEN_LIMIT=100000
+```
+
+### Auto-Switch Behaviour
+
+1. Uses `ACTIVE_PROVIDER` for all requests
+2. On **429** (rate limit) or **403** (quota exceeded) — switches to next in `PROVIDER_ORDER`
+3. When a provider's daily token limit is reached — skipped for the rest of the day
+4. Providers with no API key are silently skipped
+5. Token usage tracked in `~/.tiger/db/token_usage.json`, resets at UTC midnight
+
+---
+
+## 💬 Telegram Commands
+
+| Command | Description |
+|---------|-------------|
+| `/api` | Show all providers with token usage |
+| `/api <id>` | Switch provider (e.g. `/api claude`) |
+| `/tokens` | Show today's token usage per provider |
+| `/help` | Show all commands |
+
+---
+
+## 🧠 Memory & Context
+
+Context files loaded every turn (from `~/.tiger/data/`):
+
+- `soul.md` — Agent personality
+- `human.md` / `human2.md` — User profile
+- `ownskill.md` — Known skills (auto-refreshed every 24h)
+
+Auto-refresh cycles (configurable via `.env`):
+
+| Cycle | Variable | Default |
+|-------|----------|---------|
+| Skill summary | `OWN_SKILL_UPDATE_HOURS` | 24h |
+| Soul refresh | `SOUL_UPDATE_HOURS` | 24h |
+| Reflection | `REFLECTION_UPDATE_HOURS` | 12h |
+| Memory ingest | `MEMORY_INGEST_EVERY_TURNS` | every N turns |
+
+Vector memory DB: `~/.tiger/db/memory.sqlite`
+
+Optional `sqlite-vec` acceleration:
+```env
 SQLITE_VEC_EXTENSION=/path/to/sqlite_vec
 ```
 
-Quick commands:
+Memory commands (from source):
 ```bash
-npm run memory:init      # Initialize
-npm run memory:stats     # Show status
+npm run memory:init      # Initialize DB
+npm run memory:stats     # Show stats
 npm run memory:migrate   # Migrate from /tmp/
 npm run memory:vec:check # Check sqlite-vec
 ```
@@ -228,7 +196,25 @@ npm run memory:vec:check # Check sqlite-vec
 | **Skills** | `list_skills`, `load_skill`, `clawhub_search`, `clawhub_install` |
 | **Orchestration** | `run_sub_agents` |
 
-Skills directory: `./skills`
+---
+
+## 🔒 Security
+
+| Feature | Detail |
+|---------|--------|
+| **Credential Storage** | Externalized to `~/.tiger/.env.secrets` (mode 600) |
+| **Database Security** | `~/.tiger/db/` with hardened permissions |
+| **Audit Logging** | Sanitized skill logs at `~/.tiger/logs/audit.log` |
+| **Auto Backup** | Daily SQLite backups, 30-day retention |
+| **Secret Rotation** | Built-in 90-day rotation reminders |
+
+### Encrypted Secrets (optional)
+
+```bash
+export SECRETS_PASSPHRASE='your-long-passphrase'
+node scripts/encrypt-env.js --in .env.secrets --out .env.secrets.enc
+rm .env.secrets
+```
 
 ---
 
@@ -237,16 +223,12 @@ Skills directory: `./skills`
 | Feature | **Tiger** 🐯 | **OpenClaw** 🔧 |
 |---------|-------------|-----------------|
 | **Identity** | Persistent AI persona | Skill marketplace |
-| **Memory** | 4-file text + SQLite vector | Skill-based only |
+| **Memory** | Text files + SQLite vector | Skill-based only |
 | **Self-Training** | ✅ 12h auto-reflection | ❌ Manual only |
 | **Skill Orchestration** | Multi-skill pipelines | Single execution |
 | **Context Retention** | ✅ Cross-session | Session-only |
-| **Security Focus** | ✅ Encryption + audit logs | Basic |
-| **Installation** | `git clone + setup` | `clawhub install` |
-
-**Best For:**
-- **Tiger**: Personal AI assistant with persistent memory
-- **OpenClaw**: Quick tool library access
+| **Security** | ✅ Encryption + audit logs | Basic |
+| **Installation** | `npm install -g tiger-agent` | `clawhub install` |
 
 ---
 
@@ -254,77 +236,44 @@ Skills directory: `./skills`
 
 | Issue | Solution |
 |-------|----------|
-| `401` auth error | Check provider key matches `KIMI_PROVIDER` |
-| `403` coding agent | Provider-side restriction for token type |
-| `Shell tool disabled` | Set `ALLOW_SHELL=true` |
-| Network timeout | Check DNS, reduce `KIMI_TIMEOUT_MS` |
-| Stuck processes | `pkill -f "node src/cli.js" && npm run cli` |
+| Bot stuck on one provider | `/api <name>` in Telegram to switch manually |
+| Provider silently skipped | No API key set, or daily limit reached — check `/tokens` |
+| `401` auth error | Wrong or missing API key |
+| `403` quota error | Daily quota exhausted — auto-switches; top up billing or raise `*_TOKEN_LIMIT` |
+| `429` rate limit | Auto-switches to next provider in `PROVIDER_ORDER` |
+| Z.ai auth fails | Key must be `id.secret` format (from Zhipu/BigModel console) |
+| Shell tool disabled | Set `ALLOW_SHELL=true` in `.env` |
+| Stuck processes | `pkill -f "node src/cli.js"` then restart |
+| Reset token counters | Delete `~/.tiger/db/token_usage.json` and restart |
 
 ---
 
-## 📄 Security Details
+## 📁 Data Directory
 
-### Secret File Split (Recommended)
-
-- **`.env`**: Non-secrets (settings, paths)
-- **`.env.secrets`**: API keys (gitignored, `chmod 600`)
-
-### Encrypted Secrets (At-Rest)
-
-Protects secrets if repo/disk is stolen:
-
-```bash
-export SECRETS_PASSPHRASE='your-long-passphrase'
-node scripts/encrypt-env.js --in .env.secrets --out .env.secrets.enc
-rm .env.secrets
-```
-
-### Additional Security Features
-
-- **Audit Logging**: All skill calls logged with sanitized params
-- **Auto Backup**: Daily compressed backups, auto-cleanup after 30 days
-- **Git Hooks**: Optional pre-commit secret scanning
-- **Process Isolation**: Skills run in controlled environment
-
-**[🔐 See SECURITY_IMPROVEMENTS.md for full details →](docs/SECURITY_IMPROVEMENTS.md)**
-
----
-
-## 📁 Project Structure
+After global install, all runtime data lives in `~/.tiger/`:
 
 ```
-tiger/
-├── config/           # Externalized config (user.json)
-├── data/            # Runtime context files (gitignored)
-├── db/              # SQLite databases (gitignored)
-├── docs/            # Documentation
-│   └── SECURITY_IMPROVEMENTS.md
-├── scripts/         # Utilities
-│   ├── audit.sh     # Audit logging
-│   ├── backup.sh    # Backup automation
-│   └── sqlite_memory.py
-├── skills/          # ClawHub skills (gitignored)
-├── src/             # Source code
-├── .env.example     # Template
-├── .env.secrets.example  # Secrets template
-└── README.md
+~/.tiger/
+├── .env                  # Settings
+├── .env.secrets          # API keys (mode 600)
+├── data/                 # Context files (soul.md, human.md, ...)
+├── db/
+│   ├── agent.json        # Conversation state
+│   ├── memory.sqlite     # Vector memory
+│   └── token_usage.json  # Daily token counters
+└── logs/
+    ├── audit.log
+    └── telegram-supervisor.log
 ```
 
 ---
 
 ## 👥 Authors
 
-**Made with ❤️ by AI Research Group**  
-Department of Civil Engineering  
-King Mongkut's University of Technology Thonburi (KMUTT)  
+**AI Research Group**
+Department of Civil Engineering
+King Mongkut's University of Technology Thonburi (KMUTT)
 Bangkok, Thailand
-
----
-
-*[虎 - Hǔ - The Tiger: Powerful, agile, and relentless in pursuit of goals]*
----
-
----
 
 ---
 

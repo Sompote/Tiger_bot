@@ -1,12 +1,23 @@
 {
   "name": "tiger-agent",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "description": "Cognitive AI agent with persistent memory, multi-provider LLM, and Telegram bot",
   "type": "commonjs",
-  "description": "CLI agent service with Telegram bot and local memory",
   "main": "src/cli.js",
+  "bin": {
+    "tiger": "bin/tiger.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/",
+    ".env.example",
+    ".env.secrets.example"
+  ],
   "scripts": {
+    "postinstall": "node -e \"if(process.env.npm_config_global==='true'){console.log('\\n🐯 Tiger Agent installed!\\n\\nRun to get started:\\n  tiger onboard\\n')}\"",
     "setup": "node scripts/setup.js",
+    "onboard": "node scripts/onboard.js",
     "start": "node src/cli.js",
     "telegram": "node src/cli.js --telegram",
     "telegram:bg": "node src/cli.js --telegram --background",
@@ -14,10 +25,30 @@
     "cli": "node src/cli.js",
     "memory:init": "python3 scripts/sqlite_memory.py init --db ./db/memory.sqlite",
     "memory:stats": "python3 scripts/sqlite_memory.py stats --db ./db/memory.sqlite",
-    "memory:smoke": "python3 scripts/sqlite_memory.py add --db ./db/memory.sqlite --conversation-id cli:demo --source preference --content \"No API keys for X/Twitter search\" --embedding-json \"[0.95,0.05,0.0]\" --created-at 1 && python3 scripts/sqlite_memory.py add --db ./db/memory.sqlite --conversation-id cli:demo --source workflow --content \"YouTube to conclusions pipeline\" --embedding-json \"[0.9,0.1,0.0]\" --created-at 2 && python3 scripts/sqlite_memory.py search --db ./db/memory.sqlite --conversation-id cli:demo --query-embedding-json \"[0.94,0.06,0.0]\" --limit 5",
     "memory:migrate": "node scripts/migrate-vector-db.js --from /tmp/tiger_memory.db --to ./db/memory.sqlite",
     "memory:vec:check": "python3 scripts/sqlite_vec_setup.py",
     "memory:vec:install": "python3 scripts/sqlite_vec_setup.py --install --write-env"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "llm",
+    "telegram",
+    "chatbot",
+    "memory",
+    "claude",
+    "zhipu",
+    "glm",
+    "kimi",
+    "minimax"
+  ],
+  "author": "AI Research Group, Dept. of Civil Engineering, KMUTT",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "clawhub": "^0.5.0",
