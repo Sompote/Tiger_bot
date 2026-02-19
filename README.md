@@ -10,6 +10,17 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
+## 🆕 What's New — v0.2.0
+
+- **npm global install** — `npm install -g tiger-agent`, no git clone needed
+- **Multi-provider LLM** — 5 providers (Kimi, Z.ai, MiniMax, Claude, Moonshot) with auto-fallback
+- **Daily token limits** — per-provider limits with automatic switching at UTC midnight
+- **`tiger` CLI** — unified command: `tiger onboard`, `tiger start`, `tiger telegram`, `tiger stop`
+- **Telegram `/api` & `/tokens`** — switch providers and monitor usage from chat
+- **Encrypted secrets** — optional at-rest encryption for API keys
+
+---
+
 ## 🎯 Why Tiger?
 
 | Feature | Tiger | Generic AI Assistants |
