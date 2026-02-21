@@ -143,3 +143,44 @@ Describe user preferences, goals, and constraints here.
 - [2026-02-19] Assistant defaults to Thai language responses for this user
 - [2026-02-19] Assistant proactively offers common action menu on greeting
 - [2026-02-19] Greeting with Thai language response and action menu prompt works as expected
+- [2026-02-19] User sends many repeated greetings ('Hi', 'Hello') without follow-up, possibly testing bot responsiveness or experiencing message delivery issues.
+- [2026-02-19] User explicitly requested code inspection only — not revision — multiple times, suggesting prior bad experience with unsolicited code changes.
+- [2026-02-19] User is interested in email integration, specifically IMAP/SMTP skill from ClawHub.
+- [2026-02-19] ClawHub skill installation hit rate limits during this session.
+- [2026-02-19] Assistant failed to respond to several messages including the code-check request and repeated greetings — possible bot downtime or unhandled message queue.
+- [2026-02-19] Successfully searched ClawHub and returned a ranked table of email skills with ratings and descriptions.
+- [2026-02-19] Responded appropriately in Thai with greeting messages initially.
+- [2026-02-19] User communicates via Telegram (ID: 8172556270).
+- [2026-02-19] Assistant defaults to Thai language responses for this user.
+- [2026-02-19] User asked about 'OpenClaw' — assistant mapped it to 'ClawHub' (clawhub.io), an AI Skill Marketplace.
+- [2026-02-19] First greeting ('hello') resulted in a failed response from the assistant.
+- [2026-02-19] Answering product/platform questions (OpenClaw/ClawHub) with structured Thai-language markdown tables.
+- [2026-02-19] Responding to subsequent greetings in Thai with a friendly tone.
+- [2026-02-19] User uses English for greetings (hello, hi).
+- [2026-02-19] Assistant replies in Thai using polite particles.
+- [2026-02-19] User initiates conversation with 'hi'
+- [2026-02-19] Assistant provides a structured Thai menu upon greeting
+- [2026-02-19] Initial greeting and menu presentation
+- [2026-02-20] User initiates debugging by asking about internal system status (file updates).
+- [2026-02-20] Assistant responds with structured tabular data showing file timestamps and configuration status.
+- [2026-02-20] User requests code inspection specifically without immediate edits ('check only, don't fix').
+- [2026-02-20] Assistant maps code locations and logic flows to diagnose configuration mismatches.
+- [2026-02-20] Assistant successfully retrieved and displayed last modified timestamps for memory files.
+- [2026-02-20] Assistant traced the issue to specific files: 'reflectionScheduler.js', 'reflectionAgent.js', and 'mainAgent.js'.
+- [2026-02-20] Assistant correctly identified the discrepancy between intended 24h updates and actual 12h/session-based logic.
+- [2026-02-21] Assistant defaults to Thai language for this user.
+- [2026-02-21] Assistant provides a structured status table upon greeting.
+- [2026-02-21] User uses simple greetings to trigger status updates.
+- [2026-02-21] Code check for soul.md update completed successfully.
+- [2026-02-21] Tiger system is operational.
+- [2026-02-21] User mixes Thai with English technical commands ('Continue solve 24 hr', 'IMAP')
+- [2026-02-21] Structured markdown tables preferred for system status display
+- [2026-02-21] Security-conscious: asks how to handle credentials safely
+- [2026-02-21] Technical user familiar with cron jobs, meta keys, and IMAP protocols
+- [2026-02-21] ClawHub/Clawbot package manager used for skill management
+- [2026-02-21] Tiger bot branding with tiger emojis (🐯) in responses
+- [2026-02-21] Fixed 24h update by aligning reflectionScheduler.js and reflectionAgent.js to use soulUpdateHours=24 and soul_last_updated_ts meta key
+- [2026-02-21] Providing fallback options (Python script/curl) when ClawHub rate limited
+- [2026-02-21] Secure credential handling: enforcing .env or clawbot config instead of chat paste
+- [2026-02-21] Step-by-step Gmail App Password creation with 2FA prerequisite warning
+- [2026-02-21] Visual system architecture diagrams showing component relationships post-fix

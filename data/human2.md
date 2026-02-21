@@ -818,3 +818,106 @@ Store extra human profile details and updates here.
 - Pattern: Assistant defaults to Thai language responses for this user
 - Pattern: Assistant proactively offers common action menu on greeting
 - Workflow: Greeting with Thai language response and action menu prompt works as expected
+
+## Update 2026-02-19T02:06:05.335Z
+- Interested in IMAP/SMTP email integration and Python email libraries
+
+## Update 2026-02-19T03:16:20.228Z
+- Summary: User 8172556270 sent repeated greetings and requested email skill installation (imap-smtp). Installation failed due to ClawHub rate limiting. User also asked the assistant to check (not revise) code related to 'ownskill' and 'soul' 24-hour update not working. No assistant response was recorded for the code-check or repeated greeting messages, indicating possible system/response failures.
+- Pattern: User sends many repeated greetings ('Hi', 'Hello') without follow-up, possibly testing bot responsiveness or experiencing message delivery issues.
+- Pattern: User explicitly requested code inspection only — not revision — multiple times, suggesting prior bad experience with unsolicited code changes.
+- Pattern: User is interested in email integration, specifically IMAP/SMTP skill from ClawHub.
+- Pattern: ClawHub skill installation hit rate limits during this session.
+- Pattern: Assistant failed to respond to several messages including the code-check request and repeated greetings — possible bot downtime or unhandled message queue.
+- Lesson: ClawHub rate limit blocked imap-smtp-email skill installation; should inform user proactively and suggest retry timing.
+- Lesson: Assistant did not respond to the code-check request about 'ownskill' and 'soul' 24-hour update — this is an unresolved issue requiring follow-up.
+- Lesson: Multiple 'Hi' messages went unanswered, indicating possible bot availability issue during this session.
+- Lesson: User had to repeat the code-check request multiple times with no assistant acknowledgment — must improve message handling reliability.
+- Workflow: Successfully searched ClawHub and returned a ranked table of email skills with ratings and descriptions.
+- Workflow: Responded appropriately in Thai with greeting messages initially.
+
+## Update 2026-02-19T03:26:17.769Z
+- Summary: Short session with user on Telegram. The assistant failed to respond to the initial greeting, then answered a question about 'OpenClaw'/'ClawHub' in Thai, describing it as an AI Skill Marketplace. User greeted again and received a Thai response.
+- Pattern: User communicates via Telegram (ID: 8172556270).
+- Pattern: Assistant defaults to Thai language responses for this user.
+- Pattern: User asked about 'OpenClaw' — assistant mapped it to 'ClawHub' (clawhub.io), an AI Skill Marketplace.
+- Pattern: First greeting ('hello') resulted in a failed response from the assistant.
+- Lesson: Assistant failed to produce a response to the initial 'hello' message — greeting handling needs to be robust.
+- Lesson: Need to ensure basic greeting triggers always produce a valid response.
+- Workflow: Answering product/platform questions (OpenClaw/ClawHub) with structured Thai-language markdown tables.
+- Workflow: Responding to subsequent greetings in Thai with a friendly tone.
+
+## Update 2026-02-19T03:51:39.266Z
+- Summary: User initiated contact multiple times with English greetings; assistant responded in Thai.
+- Pattern: User uses English for greetings (hello, hi).
+- Pattern: Assistant replies in Thai using polite particles.
+
+## Update 2026-02-19T03:58:39.831Z
+- Summary: User initiated a session with a greeting; assistant responded in Thai and presented the main menu.
+- Pattern: User initiates conversation with 'hi'
+- Pattern: Assistant provides a structured Thai menu upon greeting
+- Workflow: Initial greeting and menu presentation
+
+## Update 2026-02-20T15:58:39.889Z
+- Summary: User investigated why the 'soul.md' file did not update automatically after 24 hours. The assistant inspected the codebase and identified conflicting meta keys, redundant update logic, and a lack of persistent background jobs as root causes.
+- Pattern: User initiates debugging by asking about internal system status (file updates).
+- Pattern: Assistant responds with structured tabular data showing file timestamps and configuration status.
+- Pattern: User requests code inspection specifically without immediate edits ('check only, don't fix').
+- Pattern: Assistant maps code locations and logic flows to diagnose configuration mismatches.
+- Lesson: Auto-update for 'soul.md' (last updated 2026-02-10) and 'ownskill.md' (last updated 2025-01-28) failed to trigger.
+- Lesson: Meta key mismatch exists: reflection cycle uses 'memory_reflection_last_run_ts' while message triggers use 'soul_last_updated_ts'.
+- Lesson: Configuration 'SOUL_UPDATE_HOURS = 24' in 'config.js' is defined but not used by 'reflectionScheduler.js'.
+- Lesson: Reflection scheduler 'startReflectionScheduler()' is session-bound and lacks a persistent cron job.
+- Workflow: Assistant successfully retrieved and displayed last modified timestamps for memory files.
+- Workflow: Assistant traced the issue to specific files: 'reflectionScheduler.js', 'reflectionAgent.js', and 'mainAgent.js'.
+- Workflow: Assistant correctly identified the discrepancy between intended 24h updates and actual 12h/session-based logic.
+
+## Update 2026-02-21T03:58:39.893Z
+- Summary: User initiated a greeting; Assistant responded in Thai and provided a status update on ongoing tasks.
+- Pattern: Assistant defaults to Thai language for this user.
+- Pattern: Assistant provides a structured status table upon greeting.
+- Pattern: User uses simple greetings to trigger status updates.
+- Lesson: Email skill installation encountered an issue and is awaiting a retry.
+- Workflow: Code check for soul.md update completed successfully.
+- Workflow: Tiger system is operational.
+
+## Update 2026-02-21T07:31:15.395Z
+- Goal: Set up Gmail email checking/automation
+- Platform: Clawhub user
+- Email service: Gmail
+
+## Update 2026-02-21T07:33:01.168Z
+• Uses ClawHub platform (recurring rate limit issues)
+• Interested in Gmail IMAP integration/automation
+• Thai-speaking user
+
+## Update 2026-02-21T07:34:42.509Z
+- Uses clawhub/clawbot automation platform
+- Working with email integration (IMAP/SMTP)
+- Uses Gmail for email services
+- Development environment path: /root/tiger/
+
+## Update 2026-02-21T07:37:12.360Z
+- Interested in Gmail automation/app password setup for email integration
+- Possibly working with bot development (referenced 'Tiger Bot' example)
+- Communicates in Thai language
+- Technical user familiar with 2FA/security concepts
+
+## Update 2026-02-21T15:58:39.899Z
+- Summary: User fixed 24h auto-update bug (meta key alignment), installed imap-smtp-email skill after ClawHub rate limit cleared, and requested Gmail IMAP setup with secure credential handling. Thai language preferred with structured table formatting.
+- Pattern: User mixes Thai with English technical commands ('Continue solve 24 hr', 'IMAP')
+- Pattern: Structured markdown tables preferred for system status display
+- Pattern: Security-conscious: asks how to handle credentials safely
+- Pattern: Technical user familiar with cron jobs, meta keys, and IMAP protocols
+- Pattern: ClawHub/Clawbot package manager used for skill management
+- Pattern: Tiger bot branding with tiger emojis (🐯) in responses
+- Lesson: ClawHub rate limits block skill installation intermittently
+- Lesson: Meta key mismatch (soul_last_updated_ts) caused 24h update failure
+- Lesson: No persistent cron job exists yet (scheduler only runs in session)
+- Lesson: soul.md and ownskill.md not auto-updating (stale since 2026-02-10 and 2025-01-28)
+- Lesson: reflectionUpdateHours config unused while soulUpdateHours=24 is active source of truth
+- Workflow: Fixed 24h update by aligning reflectionScheduler.js and reflectionAgent.js to use soulUpdateHours=24 and soul_last_updated_ts meta key
+- Workflow: Providing fallback options (Python script/curl) when ClawHub rate limited
+- Workflow: Secure credential handling: enforcing .env or clawbot config instead of chat paste
+- Workflow: Step-by-step Gmail App Password creation with 2FA prerequisite warning
+- Workflow: Visual system architecture diagrams showing component relationships post-fix

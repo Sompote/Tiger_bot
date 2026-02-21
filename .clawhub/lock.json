@@ -28,6 +28,10 @@
     "nano-banana-pro-2": {
       "version": "0.1.0",
       "installedAt": 1771053779494
+    },
+    "imap-smtp-email": {
+      "version": "0.0.2",
+      "installedAt": 1771659263461
     }
   }
 }

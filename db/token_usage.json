@@ -1,7 +1,17 @@
 {
   "claude": {
-    "tokens": 33654,
-    "requests": 4,
+    "tokens": 503096,
+    "requests": 22,
     "date": "2026-02-19"
+  },
+  "zai": {
+    "tokens": 169894,
+    "requests": 12,
+    "date": "2026-02-21"
+  },
+  "kimi": {
+    "tokens": 333287,
+    "requests": 26,
+    "date": "2026-02-21"
   }
 }

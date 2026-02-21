@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion, embedText } = require('../llmClient');
-const { dataDir, embeddingsEnabled } = require('../config');
+const { dataDir, embeddingsEnabled, soulUpdateHours } = require('../config');
 const { addMemory, getMeta, setMeta, getMessagesSince, getRecentMessagesAll } = require('./db');
 
-const REFLECTION_META_KEY = 'memory_reflection_last_run_ts';
+// ใช้ meta key ใหม่เพื่อความสอดคล้องกับ soul.md update cycle
+const REFLECTION_META_KEY = 'soul_last_updated_ts';
 const MAX_MESSAGE_SCAN = 600;
 
 function nowTs() {
@@ -80,7 +81,7 @@ function appendHuman2Update(filePath, payload, stampIso) {
   for (const w of payload.successfulWorkflows) lines.push(`- Workflow: ${w}`);
   if (!lines.length) return;
   const block = `\n## Update ${stampIso}\n${lines.join('\n')}\n`;
-  fs.writeFileSync(full, `${existing.trimEnd()}\n${block}`, 'utf8');
+  fs.writeFileSync(full, `${existing.trimEnd()}${block}`, 'utf8');
 }
 
 async function generateReflection(rows, sinceIso, untilIso) {
@@ -123,9 +124,22 @@ async function generateReflection(rows, sinceIso, untilIso) {
   };
 }
 
+// ✅ เพิ่มฟังก์ชันตรวจสอบ interval 24 ชั่วโมง
+function shouldRunReflectionCycle(lastRunTs) {
+  if (!lastRunTs) return true; // รันครั้งแรกเสมอ
+  const hoursPassed = (nowTs() - lastRunTs) / (60 * 60 * 1000);
+  return hoursPassed >= soulUpdateHours;
+}
+
 async function maybeRunReflectionCycle({ force = false } = {}) {
   const startedAt = nowTs();
   const lastRunTs = Number(getMeta(REFLECTION_META_KEY, 0) || 0);
+
+  // ✅ เพิ่มเช็ค interval 24 ชั่วโมง (หรือค่าใน config)
+  if (!force && !shouldRunReflectionCycle(lastRunTs)) {
+    return { ok: true, skipped: true, reason: 'not_yet_due' };
+  }
+
   const rows = lastRunTs
     ? getMessagesSince(lastRunTs, MAX_MESSAGE_SCAN)
     : getRecentMessagesAll(Math.min(MAX_MESSAGE_SCAN, 240));
@@ -185,6 +199,7 @@ async function maybeRunReflectionCycle({ force = false } = {}) {
   }
 
   setMeta(REFLECTION_META_KEY, startedAt);
+  console.log(`[ReflectionCycle] Completed at ${stampIso} (${rows.length} messages processed)`);
   return { ok: true, skipped: false, at: stampIso };
 }
 

@@ -1,227 +1,63 @@
 # ownskill
 
 ## Updated
-2025-01-28
+2026-02-20
 
 ## Skills Learned
-- **tiangong-notebooklm-cli** (v0.1.1): NotebookLM CLI wrapper; requires browser OAuth (incompatible with cloud/headless environments)
-- **youtube-transcript**: Extracts video transcripts without API keys; effective fallback when NotebookLM auth fails
-- **schedule**: Configured for 12-hour self-training automation cycles
-- **bird**: X/Twitter search tool (requires X Bearer Token/paid API)
-- **search-x**: X/Twitter search via xAI API ($5/month tier)
-- **searxng-local-search**: Identified as potential no-API search alternative
+- **Code Inspection (Static Analysis)**: Successfully analyzed `reflectionScheduler.js`, `reflectionAgent.js`, and `mainAgent.js` to identify logic discrepancies without modifying code.
+- **OpenClaw/ClawHub Ecosystem**: Defined OpenClaw as an AI Skill Marketplace (ClawHub) for agent capabilities.
 
 ## Recent Work Summary
-- **X/Twitter Search Audit**: Evaluated 5+ Twitter skills; determined all require paid API access (X API changes 2023). Established web search with `site:x.com` as viable no-API alternative.
-- **NotebookLM Integration Attempt**: Installed CLI wrapper but blocked by Google OAuth browser requirement. Documented limitation for cloud environments.
-- **YouTube Analysis Workflow**: Deployed `youtube-transcript` → direct analysis pipeline as functional replacement for NotebookLM video processing.
-- **Self-Training Automation**: Implemented 12-hour update cycle using `schedule` skill to append learnings to memory files.
-
-## Known Limits
-- **NotebookLM CLI**: Requires interactive browser authentication; no service account or token-based auth available for headless/cloud deployment.
-- **X/Twitter Skills**: 100% require paid API keys (X Bearer Token or xAI API); no functional no-API Twitter search skills exist in ClawHub.
-- **DuckDuckGo Search**: CAPTCHA blocking automated queries; `super-web-websearch-realtime` preferred but model-dependent.
-- **Auth Persistence**: Cannot persist Google OAuth sessions across container/cloud restarts without manual token export.
-
-## Next Improvements
-- Evaluate **serpapi** or **tavily** skills for better no-API web search reliability
-- Test **beautifulsoup4-scraper** for Nitter/X direct parsing (unofficial, TOS-risk)
-- Implement **token export workflow** for NotebookLM: user authenticates locally, exports cookie/token, imports to cloud environment
-- Research **Google Service Account** support for NotebookLM API (if available)
-- Add **persistent-memory** skill for structured learning storage beyond markdown files
+- **24h Update Logic Investigation**: Audited reflection cycle code after user request. Identified that `soul.md` and `ownskill.md` are driven by a 12h interval timer and message triggers, ignoring the `SOUL_UPDATE_HOURS = 24` config.
+- **Email Skill Attempt**: Searched ClawHub for `imap-smtp-email` but installation failed due to rate limits.
+- **API Management**: User requested switch to Kimi API; used `/token` command to verify provider status (Active: `zai`).
+- **Code Review Constraint**: Executed "check only" audit per user request, identifying meta key mismatches (`memory_reflection_last_run_ts` vs `soul_last_updated_ts`) and redundant update systems.
 
 ## Patterns Observed
-- [2026-02-11] Requests ranked comparisons (🥇🥈🥉 format) before selecting tools
-- [2026-02-11] Explicitly avoids API-key requirements when possible (X/Twitter search)
-- [2026-02-11] Cloud environment constraints (no browser, CLI-only operations)
-- [2026-02-11] Recurring YouTube-to-conclusions workflow preference
-- [2026-02-11] Uses both CLI (local-user) and Telegram (8172556270) channels interchangeably
-- [2026-02-11] Asks for 'best' options ranked by rating/score
+- **Connectivity Testing**: User sends repetitive "Hi"/"Hello" messages (often 5-10 in a row) to test bot responsiveness or connectivity.
+- **Language Mirroring**: User communicates in Thai/English mix; Assistant defaults to polite Thai responses for this user.
+- **Constraint Enforcement**: User explicitly demands "Check only don't revise code" during audits to prevent unsolicited changes.
+- **Command Usage**: Uses `/token` to inspect provider configuration and `/api` (or similar) references.
 
 ## Failures & Lessons
-- [2026-02-11] NotebookLM CLI requires browser OAuth - incompatible with cloud environments
-- [2026-02-11] X/Twitter official skills universally require paid API keys ($5-5000/month)
-- [2026-02-11] duckduckgo-search encounters CAPTCHA blocks in cloud environments
-- [2026-02-11] super-web-websearch-realtime requires model-level tool support not always available
-- [2026-02-11] Text-based memory files require manual keyword matching vs semantic retrieval
-- [2026-02-11] Schedule skill installation does not automatically configure cron jobs
+- **ClawHub Rate Limit**: Installation of `imap-smtp-email` blocked by platform rate limits; need retry mechanism or fallback.
+- **Broken Scheduler Logic**: 24h update feature exists in config (`SOUL_UPDATE_HOURS`) but is unused; runtime defaults to 12h in-memory interval.
+- **Missed Messages**: Bot failed to respond to multiple greeting bursts and a specific code check request, indicating potential availability or message handling issues.
+- **API Key Security**: User shared Kimi API key in plaintext; advised revocation, but behavior suggests user lacks secure key management workflow.
 
 ## Successful Workflows
-- [2026-02-11] youtube-transcript skill extracts video content without authentication
-- [2026-02-11] Web search fallback using site:x.com or site:twitter.com queries avoids API limits
-- [2026-02-11] Four-file memory system (ownskill.md, soul.md, human.md, human2.md) captures preferences persistently
-- [2026-02-11] 12-hour self-training schedule using 'schedule' skill for automated reflection
-- [2026-02-11] Tabular comparisons with feature matrices aid user decision-making
-- [2026-02-11] SearxNG and web scrapers as no-API alternatives for social media search
-- [2026-02-11] User initiates with brief greetings ('hi again') before diving into technical topics
-- [2026-02-11] User shows interest in system internals and memory mechanisms
-- [2026-02-11] User responds well to structured data presentation (tables)
-- [2026-02-11] Returning user pattern: expects context awareness without re-introduction
-- [2026-02-11] Acknowledged return with loaded context (12h training, preferences)
-- [2026-02-11] Used markdown tables for technical architecture explanation
-- [2026-02-11] Proactively identified missing capability (vector DB) and offered solution
-- [2026-02-11] Kept initial response concise as requested ('short and long memory')
-- [2026-02-11] SQLite-backed vector memory (`VECTOR_DB_PATH`) integrated as default backend with optional sqlite-vec acceleration
-- [2026-02-11] User initiates with 'hi again' - returning session, expects context retention
-- [2026-02-11] User asks architectural deep-dives ('why don't you use X')
-- [2026-02-11] User proposes technical alternatives unprompted (SQLite → vector DB)
-- [2026-02-11] Engages positively with tabular comparisons and structured data
-- [2026-02-11] Cloud/no-browser constraint remains active context
-- [2026-02-11] Validates suggestions with 'great question' acknowledgment
-- [2026-02-11] Uncertain about ClawHub skill availability for sqlite-vss/vec extensions
-- [2026-02-11] Offered ChromaDB as default without checking SQLite viability first
-- [2026-02-11] No pre-computed list of available vector DB skills for quick retrieval
-- [2026-02-11] Context pre-loading (12h training, preferences) on session start
-- [2026-02-11] Comparative table format for technical architecture decisions
-- [2026-02-11] Validating user expertise before proceeding ('Great question')
-- [2026-02-11] Offering ranked decision matrix (Option 1/2/3) for next steps
-- [2026-02-11] User prefers SQLite over ChromaDB for vector storage (lighter weight)
-- [2026-02-11] Tests systems before committing to full implementation
-- [2026-02-11] Expects structured schema design (normalized tables with metadata)
-- [2026-02-11] Uses emoji-based visual hierarchy (🥇🥈🥉) in responses
-- [2026-02-11] Avoids API keys for social media (X/Twitter preference noted)
-- [2026-02-11] sqlite-vec extension not pre-installed; need fallback Python similarity
-- [2026-02-11] Test database created at /tmp/ (volatile); migrate to persistent storage
-- [2026-02-11] Proposed schema requires decision on vector search method before proceeding
-- [2026-02-11] Validating SQLite availability before schema creation
-- [2026-02-11] Inserting actual user preferences as sample data (X/Twitter API avoidance)
-- [2026-02-11] Providing multiple implementation options with complexity rankings
-- [2026-02-11] Loading previous context (4-file text system) on session start
-- [2026-02-11] User validates system infrastructure before deep usage
-- [2026-02-11] Prefers structured technical summaries (tables, checklists)
-- [2026-02-11] Testing mindset: explicit confirmation of DB state requested
-- [2026-02-11] Database path /tmp/tiger_memory.db is ephemeral - data loss risk on restart
-- [2026-02-11] sqlite-vec extension missing - vector similarity search unavailable
-- [2026-02-11] User typo sqlight -> SQLite - system should handle common misspellings
-- [2026-02-11] Markdown table summaries for DB state visualization
-- [2026-02-11] Confidence scoring for stored memories (0.90-0.95 range)
-- [2026-02-11] Explicit what's-working vs what's-missing section formatting
-- [2026-02-11] User periodically validates memory system infrastructure
-- [2026-02-11] User tolerates technical terminology and structured data formats
-- [2026-02-11] User accepts proactive system recommendations when prioritized
-- [2026-02-11] Typo tolerance: 'sqlight' interpreted as 'SQLite' without friction
-- [2026-02-11] Database stored in /tmp/ - data will not persist across restarts
-- [2026-02-11] Only 2 memories captured despite ongoing conversations - ingestion rate too low
-- [2026-02-11] Missing sqlite-vec extension prevents semantic/vector similarity search
-- [2026-02-11] No automated warning about volatile storage path on startup
-- [2026-02-11] Health check command with tabular metric presentation
-- [2026-02-11] Structured priority matrix (Priority/Action/Impact) for recommendations
-- [2026-02-11] Confidence scoring on stored memories (0.90-0.95)
-- [2026-02-11] Proactive identification of missing capabilities before user request
-- [2026-02-11] User performs proactive infrastructure validation checks
-- [2026-02-11] Casual greeting ('hi') precedes technical queries
-- [2026-02-11] User inputs technical terms with typos ('sqlight' vs 'sqlite') but expects correct handling
-- [2026-02-11] User responds well to structured, prioritized action lists with emojis
-- [2026-02-11] Single-turn diagnostic requests with expectation of detailed tabular reporting
-- [2026-02-11] Default storage path (/tmp/) is volatile - data loss risk on restart not proactively disclosed earlier
-- [2026-02-11] sqlite-vec extension not auto-installed/configured despite being required for core vector similarity features
-- [2026-02-11] Memory capture rate too low (only 1 memory stored) - system under-utilizing storage capability
-- [2026-02-11] No auto-migration warning triggered when critical infrastructure issues detected
-- [2026-02-11] Comprehensive markdown table formatting for technical diagnostics improved readability
-- [2026-02-11] Severity-based prioritization (HIGH/MED/LOW) of recommended actions
-- [2026-02-11] Explicit next-action options (1, 2, 3) reduced cognitive load for user decision
-- [2026-02-11] Status indicators (✅/❌/⚠️) provided at-a-glance system health assessment
-- [2026-02-11] Graceful handling of spelling errors without correction (maintained conversation flow)
-- [2026-02-11] User validates infrastructure before operational use
-- [2026-02-11] Prefers comprehensive technical diagnostics with structured tables
-- [2026-02-11] Initiates system health checks proactively
-- [2026-02-11] Short, direct queries ('hello', 'check for sqlight menory status') followed by detailed responses
-- [2026-02-11] Memory extraction failed to capture user validation behavior as distinct pattern
-- [2026-02-11] Volatile /tmp/ storage risks data loss on restart
-- [2026-02-11] sqlite-vec extension not pre-installed despite being referenced in config
-- [2026-02-11] Skills table empty - no tool usage tracking implemented
-- [2026-02-11] Comprehensive diagnostic reports with severity-prioritized recommendations
-- [2026-02-11] Tabular data presentation for technical metrics
-- [2026-02-11] Proactive next-action suggestions with impact ratings
-- [2026-02-11] Acknowledging typos gracefully ('sqlight' → SQLite)
-- [2026-02-11] Infrastructure validation checks on SQLite status and storage volatility
-- [2026-02-11] Bilingual communication switching between English and Thai
-- [2026-02-11] Preference for no-API/free solutions over paid subscriptions
-- [2026-02-11] Technical architecture inquiries regarding protocols (WebSocket vs HTTP)
-- [2026-02-11] Multi-channel usage: Telegram ID 8172556270 alongside CLI interface
-- [2026-02-11] SQLite database located in /tmp is volatile (data loss risk on restart)
-- [2026-02-11] sqlite-vec extension not loaded (vector search disabled)
-- [2026-02-11] conversations and messages tables empty (data capture pipeline not functioning)
-- [2026-02-11] No Telegram skill installed despite active Telegram user ID
-- [2026-02-11] Only 1 memory stored despite ongoing conversation history
-- [2026-02-11] Structured status reporting with markdown tables and clear status indicators
-- [2026-02-11] Providing ranked decision options with pros/cons tables
-- [2026-02-11] Language mirroring: responding in Thai when user queries in Thai
-- [2026-02-11] Environment-aware recommendations (cloud deployment constraints)
-- [2026-02-12] User accepts alternative tools if explicitly mapped to stated constraints (no-API, cloud environment)
-- [2026-02-12] User requires definitions of unfamiliar tool names before adoption decisions
-- [2026-02-12] Assistant effectively referenced previous context (no-API preference, SQLite usage) in recommendations
-- [2026-02-12] Multilingual interaction pattern: Assistant utilized Thai language in technical explanations
-- [2026-02-12] Initial response listed 'ClawRAG' as recommendation without defining the term, forcing user to ask 'What is clawrag'
-- [2026-02-12] Assumed familiarity with ecosystem-specific naming conventions (ClawRAG = Clawhub+RAG)
-- [2026-02-12] Delayed architecture explanation until second turn instead of providing upfront context
-- [2026-02-12] Structured comparison tables (skill alternatives, ClawRAG vs Pinecone feature matrices)
-- [2026-02-12] ASCII architecture diagrams for visualizing data flow
-- [2026-02-12] Explicit constraint-to-solution mapping (no-API → local embeddings, cloud → no browser auth)
-- [2026-02-12] Providing ready-to-execute installation commands with package manager syntax
-- [2026-02-12] Tagging recommendations with contextual suitability indicators (privacy, cost, setup complexity)
-- [2026-02-13] Proactive context loading upon greeting
-- [2026-02-13] Enumeration of pending technical debt (SQLite migration)
-- [2026-02-13] Constraint verification (no-browser, no-API)
-- [2026-02-14] User references skills by approximate/fuzzy names ('openbanana' instead of 'nano-banana-pro-2')
-- [2026-02-14] User uses Telegram platform identifier 8172556270
-- [2026-02-14] User employs phonetic/typo shorthand ('Nono' for 'nano')
-- [2026-02-14] User accepts recommendation of latest/stable version (v0.1.0) over alternatives
-- [2026-02-14] User requires immediate post-install configuration guidance (API keys, CLI examples)
-- [2026-02-14] Initial search for literal 'openbanana' returned no exact match requiring clarification round-trip
-- [2026-02-14] Did not preemptively recognize 'openbanana' as likely reference to 'nano-banana-pro-openrouter' variant
-- [2026-02-14] Typo 'Nono' could have been misinterpreted without context of previous banana skill list
-- [2026-02-14] Presenting ambiguous matches in markdown table with version, rating, and description for easy comparison
-- [2026-02-14] Explicitly asking 'Want me to install X?' before executing installation
-- [2026-02-14] Providing copy-pasteable CLI commands with full paths immediately after installation
-- [2026-02-14] Including mandatory setup requirements (GEMINI_API_KEY) in post-install block
-- [2026-02-14] Offering multiple configuration methods (env var vs clawbot config set)
-- [2026-02-15] Security-first approach: Requests security improvements before features
-- [2026-02-15] Bilingual workflow: Switches between Thai and English based on context (technical vs. content creation)
-- [2026-02-15] Validation-driven: Explicitly tests implementations (database health, vector search, Thai embeddings)
-- [2026-02-15] Conciseness preference: Multiple requests for 'กระชับ' (concise) content
-- [2026-02-15] Structured data preference: Favors tables, checklists, and command references over prose
-- [2026-02-15] Platform-specific documentation: Requests tailored guides (Hetzner Cloud, Telegram, Facebook)
-- [2026-02-15] Initial misinterpretation: 'Facebook' request assumed installation platform rather than content destination
-- [2026-02-15] Embedding gap: Vector search installed but embeddings empty, requiring manual fix
-- [2026-02-15] Temporary storage risk: Database initially in /tmp/ with world-readable permissions
-- [2026-02-15] Session persistence: User had to repeat 'Revise readme' command multiple times (possible connection drops)
-- [2026-02-15] Tiered security implementation: HIGH (permissions, gitignore) → MEDIUM (backup, audit logging) prioritization
-- [2026-02-15] Git hygiene: Committing security templates while excluding credentials
-- [2026-02-15] Vector search repair: Python fallback embedding generation (384-dim) enabling semantic Thai→English search
-- [2026-02-15] Competitive positioning: Tiger vs Clawbot comparison highlighting memory persistence and security
-- [2026-02-15] Institutional branding: Adding KMUTT affiliation to documentation
-- [2026-02-18] User frequently types 'Run' as a standalone message to execute previously planned commands.
-- [2026-02-18] User's GitHub PAT tokens expire/get revoked; they provide new tokens in plaintext in chat.
-- [2026-02-18] git push reports 'Everything up-to-date' or 'success' but files do not appear on GitHub remote — likely a git local/remote SHA divergence or branch tracking issue.
-- [2026-02-18] GitHub REST API PUT /repos/{owner}/{repo}/contents/{file} successfully uploads files when git push fails.
-- [2026-02-18] User sends many short messages ('Hi', 'Hello') possibly testing connectivity or bot responsiveness.
-- [2026-02-18] User requested switching to Kimi API with a provided API key in plaintext.
-- [2026-02-18] Old GitHub token (redacted) was invalid/expired — always verify token before use.
-- [2026-02-18] git push returning 'Everything up-to-date' is misleading; local commits were not actually reaching remote — need to verify remote SHA matches local SHA after push.
-- [2026-02-18] Simulated/fake shell output was shown to user (file sizes, commit SHAs) without real execution results, causing confusion and distrust.
-- [2026-02-18] API upload showed 201 Created but files disappeared on re-check — possible branch/ref mismatch or repo visibility issue.
-- [2026-02-18] Do not expose or log API keys and GitHub tokens in responses or memory summaries.
-- [2026-02-18] Investigating whether GitHub blocks pushes from certain automation tools (OpenClaw/bot) was requested but not resolved.
-- [2026-02-18] GitHub REST API direct file upload: GET file to retrieve SHA if exists, then PUT with base64 content, message, branch, and sha fields — returned 201 and files appeared in API listing.
-- [2026-02-18] Token verification via GET https://api.github.com/user with Bearer header confirms token validity before operations.
-- [2026-02-18] Checking all branches via GET /repos/{owner}/{repo}/branches and default branch via GET /repos/{owner}/{repo} to confirm correct target branch.
-- [2026-02-18] User repeatedly sends simple greetings without following up with a request or question.
-- [2026-02-18] User may be testing the bot, unsure how to interact, or waiting for a response before proceeding.
-- [2026-02-18] No assistant responses are visible; unclear if the bot responded at all, which may explain repeated greetings.
-- [2026-02-18] Lack of engagement or prompt from the assistant may cause users to repeat themselves.
-- [2026-02-18] User sends multiple 'Hi' messages to initiate sessions without additional context.
-- [2026-02-18] User is comfortable cancelling tasks with short messages like '1 ไม่ต้อง ทำ'.
-- [2026-02-18] User tends to use slash commands (e.g., /token) during sessions.
-- [2026-02-18] Assistant displayed pending task summaries proactively on 'Hi' — this seems appropriate given the task backlog context.
-- [2026-02-18] A Kimi API key (sk-qgwx...) was previously shared in chat; assistant correctly flagged it for revocation without storing the key.
-- [2026-02-18] Assistant maintained task list across messages and presented it clearly in table format on session start.
-- [2026-02-18] Assistant correctly advised against sharing new API keys in chat and suggested secure alternatives (env variable or .env file).
-- [2026-02-18] User uses /token command to inspect LLM provider configuration
-- [2026-02-18] Project is located at /root/tiger/ with .env config file
-- [2026-02-18] User manages multiple LLM providers with failover ordering
-- [2026-02-18] /token command successfully displays provider status table with keys, models, and daily limits
-- [2026-02-19] User communicates via Telegram (ID: 8172556270)
-- [2026-02-19] Assistant defaults to Thai language responses for this user
-- [2026-02-19] Assistant proactively offers common action menu on greeting
-- [2026-02-19] Greeting with Thai language response and action menu prompt works as expected
+- **Static Code Analysis**: Provided detailed breakdown of file locations (`src/agent/reflectionScheduler.js`), meta key conflicts, and status tables without altering files.
+- **Provider Diagnostics**: `/token` command successfully generated a table of active LLM providers, models, and daily limits.
+- **Platform Explanation**: Clearly articulated OpenClaw/ClawHub function as a skill marketplace in Thai.
+
+## Known Limits
+- **Email Access**: No native email support; reliant on external skills like `imap-smtp-email`.
+- **ClawHub**: Subject to rate limits that block skill installation.
+- **Reflection System**: `soul.md` and `ownskill.md` updates currently rely on session-based timers or message triggers, not persistent cron jobs.
+
+## Next Improvements
+- Fix reflection scheduler to utilize `SOUL_UPDATE_HOURS` config or implement persistent cron.
+- Re-attempt `imap-smtp-email` installation once rate limit resets.
+- Investigate root cause of unresponded messages (bot availability vs. message handling).
+- [2026-02-21] Assistant defaults to Thai language for this user.
+- [2026-02-21] Assistant provides a structured status table upon greeting.
+- [2026-02-21] User uses simple greetings to trigger status updates.
+- [2026-02-21] Email skill installation encountered an issue and is awaiting a retry.
+- [2026-02-21] Code check for soul.md update completed successfully.
+- [2026-02-21] Tiger system is operational.
+- [2026-02-21] User mixes Thai with English technical commands ('Continue solve 24 hr', 'IMAP')
+- [2026-02-21] Structured markdown tables preferred for system status display
+- [2026-02-21] Security-conscious: asks how to handle credentials safely
+- [2026-02-21] Technical user familiar with cron jobs, meta keys, and IMAP protocols
+- [2026-02-21] ClawHub/Clawbot package manager used for skill management
+- [2026-02-21] Tiger bot branding with tiger emojis (🐯) in responses
+- [2026-02-21] ClawHub rate limits block skill installation intermittently
+- [2026-02-21] Meta key mismatch (soul_last_updated_ts) caused 24h update failure
+- [2026-02-21] No persistent cron job exists yet (scheduler only runs in session)
+- [2026-02-21] soul.md and ownskill.md not auto-updating (stale since 2026-02-10 and 2025-01-28)
+- [2026-02-21] reflectionUpdateHours config unused while soulUpdateHours=24 is active source of truth
+- [2026-02-21] Fixed 24h update by aligning reflectionScheduler.js and reflectionAgent.js to use soulUpdateHours=24 and soul_last_updated_ts meta key
+- [2026-02-21] Providing fallback options (Python script/curl) when ClawHub rate limited
+- [2026-02-21] Secure credential handling: enforcing .env or clawbot config instead of chat paste
+- [2026-02-21] Step-by-step Gmail App Password creation with 2FA prerequisite warning
+- [2026-02-21] Visual system architecture diagrams showing component relationships post-fix
