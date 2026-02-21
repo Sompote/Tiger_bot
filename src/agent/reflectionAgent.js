@@ -1,11 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion, embedText } = require('../llmClient');
-const { dataDir, embeddingsEnabled, soulUpdateHours } = require('../config');
+const { dataDir, embeddingsEnabled, reflectionUpdateHours } = require('../config');
 const { addMemory, getMeta, setMeta, getMessagesSince, getRecentMessagesAll } = require('./db');
 
-// ใช้ meta key ใหม่เพื่อความสอดคล้องกับ soul.md update cycle
-const REFLECTION_META_KEY = 'soul_last_updated_ts';
+const REFLECTION_META_KEY = 'memory_reflection_last_run_ts';
 const MAX_MESSAGE_SCAN = 600;
 
 function nowTs() {
@@ -124,18 +123,16 @@ async function generateReflection(rows, sinceIso, untilIso) {
   };
 }
 
-// ✅ เพิ่มฟังก์ชันตรวจสอบ interval 24 ชั่วโมง
 function shouldRunReflectionCycle(lastRunTs) {
-  if (!lastRunTs) return true; // รันครั้งแรกเสมอ
+  if (!lastRunTs) return true;
   const hoursPassed = (nowTs() - lastRunTs) / (60 * 60 * 1000);
-  return hoursPassed >= soulUpdateHours;
+  return hoursPassed >= reflectionUpdateHours;
 }
 
 async function maybeRunReflectionCycle({ force = false } = {}) {
   const startedAt = nowTs();
   const lastRunTs = Number(getMeta(REFLECTION_META_KEY, 0) || 0);
 
-  // ✅ เพิ่มเช็ค interval 24 ชั่วโมง (หรือค่าใน config)
   if (!force && !shouldRunReflectionCycle(lastRunTs)) {
     return { ok: true, skipped: true, reason: 'not_yet_due' };
   }
