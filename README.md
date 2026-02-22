@@ -10,7 +10,7 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.2.3
+## 🆕 What's New — v0.2.4
 
 - **ClawHub skill install fixed** — `clawhub_install` and `clawhub_search` now work correctly when installed via `npm install -g`
 - **No required API keys** — `tiger onboard` skips providers with no key; any single provider is enough to start
