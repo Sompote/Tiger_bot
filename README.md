@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./IMG_5745.PNG" alt="Tiger bot" width="900" />
+</p>
+
 # 🐯 Tiger Agent
 
 [![npm version](https://img.shields.io/npm/v/tiger-agent.svg)](https://www.npmjs.com/package/tiger-agent)
