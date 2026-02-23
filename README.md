@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./IMG_5745.PNG" alt="Tiger bot" width="900" />
+  <img src="./IMG_5745.jpg" alt="Tiger bot" width="900" />
 </p>
 
 # 🐯 Tiger Agent
