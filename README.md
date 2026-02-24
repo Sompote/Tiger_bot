@@ -14,7 +14,12 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.2.4
+## 🆕 What's New — v0.2.5
+
+- **Context-file mirror compatibility** — if legacy root files like `./soul.md` or `./ownskill.md` already exist, Tiger now mirrors updates to them automatically while continuing to use `DATA_DIR` as the canonical source
+- **README path clarification** — docs now explicitly distinguish canonical `DATA_DIR` files from optional legacy root mirrors
+
+### v0.2.4
 
 - **ClawHub skill install fixed** — `clawhub_install` and `clawhub_search` now work correctly when installed via `npm install -g`
 - **No required API keys** — `tiger onboard` skips providers with no key; any single provider is enough to start
@@ -145,7 +150,7 @@ Logs: `~/.tiger/logs/telegram.out.log`
 | `ALLOW_SHELL` | `false` | Enable shell tool |
 | `ALLOW_SKILL_INSTALL` | `false` | Enable ClawHub skill install |
 | `VECTOR_DB_PATH` | `~/.tiger/db/memory.sqlite` | SQLite vector DB path |
-| `DATA_DIR` | `~/.tiger/data` | Context files directory |
+| `DATA_DIR` | `~/.tiger/data` | Canonical context files directory |
 | `OWN_SKILL_UPDATE_HOURS` | `24` | Hours between `ownskill.md` regenerations (min 1) |
 | `SOUL_UPDATE_HOURS` | `24` | Hours between `soul.md` regenerations (min 1) |
 | `REFLECTION_UPDATE_HOURS` | `12` | Hours between reflection cycles (min 1) |
@@ -217,7 +222,7 @@ MOONSHOT_TOKEN_LIMIT=100000
 
 ### Context Files
 
-Loaded on every turn from `~/.tiger/data/`:
+Loaded on every turn from `DATA_DIR` (default: `~/.tiger/data/`):
 
 | File | Purpose |
 |------|---------|
@@ -225,6 +230,8 @@ Loaded on every turn from `~/.tiger/data/`:
 | `human.md` | User profile — goals, patterns, preferences |
 | `human2.md` | Running update log written after every conversation turn |
 | `ownskill.md` | Known skills, workflows, and lessons learned |
+
+> **v0.2.5 compatibility note:** If root-level legacy files already exist (for example `./soul.md`, `./ownskill.md`), Tiger mirrors updates to those files automatically. The canonical source remains `DATA_DIR`.
 
 ### Auto-Refresh Cycles
 
@@ -339,6 +346,8 @@ rm .env.secrets
 | `403` quota error | Daily quota exhausted — auto-switches; raise `*_TOKEN_LIMIT` |
 | `429` rate limit | Auto-switches to next provider in `PROVIDER_ORDER` |
 | Z.ai auth fails | Key must be `id.secret` format (from Zhipu/BigModel console) |
+| Telegram bot runs but does not respond | Ensure only one polling instance is running for the same bot token (stop old/global service copies) |
+| `soul.md` / `ownskill.md` look stale | Check `DATA_DIR` first (default `~/.tiger/data`). In v0.2.5+, existing root legacy copies are mirrored automatically |
 | Shell tool disabled | Set `ALLOW_SHELL=true` in `~/.tiger/.env` |
 | Stuck processes | `pkill -f tiger-agent` then restart |
 | Reset token counters | Delete `~/.tiger/db/token_usage.json` and restart |
