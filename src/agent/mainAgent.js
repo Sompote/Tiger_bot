@@ -12,6 +12,7 @@ const {
   memoryIngestMinChars
 } = require('../config');
 const { loadContextFiles } = require('./contextFiles');
+const { writeContextFile, appendContextFile } = require('./contextFileMirrors');
 const { tools, callTool } = require('./toolbox');
 const {
   ensureConversation,
@@ -98,7 +99,7 @@ async function maybeUpdateHumanFile(userText, assistantText) {
   if (!append) return;
 
   const block = `\n## Update ${new Date().toISOString()}\n${append}\n`;
-  fs.appendFileSync(path.resolve(human2.full), block, 'utf8');
+  appendContextFile(path.resolve(human2.full), block);
 }
 
 function buildSystemPrompt(contextText, memoriesText) {
@@ -173,7 +174,7 @@ async function maybeUpdateOwnSkillSummary(conversationIdValue) {
 
   const next = String(message.content || '').trim();
   if (!next) return;
-  fs.writeFileSync(path.resolve(ownSkillPath), `${next}\n`, 'utf8');
+  writeContextFile(path.resolve(ownSkillPath), `${next}\n`);
   setMeta(OWNSKILL_META_KEY, Date.now());
 }
 
@@ -209,7 +210,7 @@ async function maybeUpdateSoulSummary(conversationIdValue) {
 
   const next = String(message.content || '').trim();
   if (!next) return;
-  fs.writeFileSync(path.resolve(soulPath), `${next}\n`, 'utf8');
+  writeContextFile(path.resolve(soulPath), `${next}\n`);
   setMeta(SOUL_META_KEY, Date.now());
 }
 

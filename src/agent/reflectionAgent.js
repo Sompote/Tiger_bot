@@ -3,6 +3,7 @@ const path = require('path');
 const { chatCompletion, embedText } = require('../llmClient');
 const { dataDir, embeddingsEnabled, reflectionUpdateHours } = require('../config');
 const { addMemory, getMeta, setMeta, getMessagesSince, getRecentMessagesAll } = require('./db');
+const { writeContextFile } = require('./contextFileMirrors');
 
 const REFLECTION_META_KEY = 'memory_reflection_last_run_ts';
 const MAX_MESSAGE_SCAN = 600;
@@ -67,7 +68,7 @@ function appendTimestampedBullets(filePath, heading, bullets, stamp) {
   const withHeading = ensureHeading(existing, heading);
   const lines = bullets.map((line) => `- [${stamp}] ${line}`).join('\n');
   const next = `${withHeading.trimEnd()}\n${lines}\n`;
-  fs.writeFileSync(full, next, 'utf8');
+  writeContextFile(full, next);
 }
 
 function appendHuman2Update(filePath, payload, stampIso) {
@@ -80,7 +81,7 @@ function appendHuman2Update(filePath, payload, stampIso) {
   for (const w of payload.successfulWorkflows) lines.push(`- Workflow: ${w}`);
   if (!lines.length) return;
   const block = `\n## Update ${stampIso}\n${lines.join('\n')}\n`;
-  fs.writeFileSync(full, `${existing.trimEnd()}${block}`, 'utf8');
+  writeContextFile(full, `${existing.trimEnd()}${block}`);
 }
 
 async function generateReflection(rows, sinceIso, untilIso) {

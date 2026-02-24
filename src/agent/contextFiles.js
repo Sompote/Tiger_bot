@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { dataDir } = require('../config');
 const { ensureDir } = require('../utils');
+const { writeContextFile, syncLegacyRootMirror } = require('./contextFileMirrors');
 
 const files = ['soul.md', 'human.md', 'human2.md', 'ownskill.md'];
 
@@ -10,8 +11,10 @@ function ensureContextFiles() {
   for (const name of files) {
     const full = path.join(dataDir, name);
     if (!fs.existsSync(full)) {
-      fs.writeFileSync(full, `# ${name.replace('.md', '')}\n\n`, 'utf8');
+      writeContextFile(full, `# ${name.replace('.md', '')}\n\n`);
+      continue;
     }
+    syncLegacyRootMirror(full);
   }
 }
 
