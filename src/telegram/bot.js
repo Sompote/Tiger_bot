@@ -5,6 +5,14 @@ const { telegramBotToken } = require('../config');
 const { handleMessage } = require('../agent/mainAgent');
 const tokenManager = require('../tokenManager');
 const { getProvider } = require('../apiProviders');
+const {
+  ensureSwarmLayout,
+  runTigerFlow,
+  cancelTask,
+  askAgent,
+  getAgentsStatus,
+  getStatusSummary
+} = require('../swarm');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -137,13 +145,18 @@ function startTelegramBot() {
     throw new Error('TELEGRAM_BOT_TOKEN is empty.');
   }
 
+  ensureSwarmLayout();
   const bot = new TelegramBot(telegramBotToken, { polling: true });
+  let swarmEnabled = true;
 
   // Register commands so Telegram shows the list when user types /
   bot.setMyCommands([
     { command: 'api',    description: 'Show or switch active API provider' },
     { command: 'tokens', description: 'Show token usage for today' },
     { command: 'limit',  description: 'Show or set daily token limit per provider' },
+    { command: 'swarm',  description: 'Enable or disable agent swarm' },
+    { command: 'status', description: 'Show swarm task status' },
+    { command: 'agents', description: 'Show swarm agents' },
     { command: 'help',   description: 'Show all available commands' }
   ]).catch((err) => {
     process.stderr.write(`[telegram] setMyCommands failed: ${err.message}\n`);
@@ -186,6 +199,86 @@ function startTelegramBot() {
       return;
     }
 
+    if (text.startsWith('/swarm')) {
+      const arg = text.slice(6).trim().toLowerCase();
+      if (!arg) {
+        await safeSend(bot, chatId, `🐯 Swarm is currently *${swarmEnabled ? 'ON' : 'OFF'}*.\nUse \`/swarm on\` or \`/swarm off\`.`, MD);
+        return;
+      }
+      if (arg === 'on') {
+        swarmEnabled = true;
+        await safeSend(bot, chatId, '✅ Swarm routing is now *ON*', MD);
+        return;
+      }
+      if (arg === 'off') {
+        swarmEnabled = false;
+        await safeSend(bot, chatId, '✅ Swarm routing is now *OFF*\\.\nNew messages will go to the regular Tiger agent\\.', { parse_mode: 'MarkdownV2' });
+        return;
+      }
+      await safeSend(bot, chatId, 'Usage: `/swarm on` or `/swarm off`', MD);
+      return;
+    }
+
+    if (text === '/agents') {
+      const agents = getAgentsStatus();
+      const lines = ['🤖 *Agents*', ''];
+      for (const a of agents) {
+        lines.push(`${a.alive ? '✅' : '❌'} \`${a.name}\` - ${a.label}`);
+      }
+      await safeSend(bot, chatId, lines.join('\n'), MD);
+      return;
+    }
+
+    if (text === '/status') {
+      const status = getStatusSummary();
+      const lines = ['📋 *Swarm Status*', ''];
+      lines.push(`in_progress: *${status.in_progress.length}*`);
+      for (const t of status.in_progress.slice(0, 10)) {
+        lines.push(`- \`${t.task_id}\` → \`${t.next_agent}\` | ${t.goal}`);
+      }
+      lines.push(`pending: *${status.pending.length}*`);
+      for (const t of status.pending.slice(0, 10)) {
+        lines.push(`- \`${t.task_id}\` → \`${t.next_agent}\` | ${t.goal}`);
+      }
+      lines.push(`done: *${status.done.length}* | failed: *${status.failed.length}*`);
+      await safeSend(bot, chatId, lines.join('\n'), MD);
+      return;
+    }
+
+    if (text.startsWith('/cancel ')) {
+      const taskId = text.slice(8).trim();
+      if (!taskId) {
+        await safeSend(bot, chatId, 'Usage: `/cancel task_xxx`', MD);
+        return;
+      }
+      const out = cancelTask(taskId, 'tiger');
+      if (!out.ok) {
+        await safeSend(bot, chatId, `❌ ${out.error}`);
+        return;
+      }
+      await safeSend(bot, chatId, `✅ Cancelled \`${taskId}\``, MD);
+      return;
+    }
+
+    if (text.startsWith('/ask ')) {
+      const parts = text.slice(5).trim();
+      const [agentNameRaw, ...rest] = parts.split(/\s+/);
+      const agentName = String(agentNameRaw || '').toLowerCase();
+      const prompt = rest.join(' ').trim();
+      if (!agentName || !prompt) {
+        await safeSend(bot, chatId, 'Usage: `/ask <designer|senior_eng|spec_writer|scout|coder|critic> <question>`', MD);
+        return;
+      }
+      try {
+        await safeSendTyping(bot, chatId);
+        const answer = await askAgent(agentName, prompt);
+        await safeSend(bot, chatId, answer || '(empty reply)');
+      } catch (err) {
+        await safeSend(bot, chatId, `⚠️ /ask failed: ${err.message}`);
+      }
+      return;
+    }
+
     if (text === '/help' || text === '/start') {
       const helpText = [
         '🤖 *Tiger Bot Commands*',
@@ -195,6 +288,12 @@ function startTelegramBot() {
         '/tokens \\- Show token usage for today',
         '/limit \\- Show daily token limits per provider',
         '/limit `<name> <n>` \\- Set limit \\(0 = unlimited\\)',
+        '/swarm \\- Show swarm on/off status',
+        '/swarm `<on|off>` \\- Enable or disable swarm routing',
+        '/status \\- Show swarm task status',
+        '/agents \\- Show internal swarm agents',
+        '/cancel `<task_id>` \\- Cancel a swarm task',
+        '/ask `<agent> <question>` \\- Ask a specific internal agent',
         '/help \\- Show this message',
         '',
         '*Available providers:* ' + KNOWN_PROVIDERS.join(', ')
@@ -214,9 +313,44 @@ function startTelegramBot() {
     try {
       await safeSendTyping(bot, chatId);
       typingTimer = setInterval(() => safeSendTyping(bot, chatId), 4500);
+      if (!swarmEnabled) {
+        const reply = await handleMessage({ platform: 'telegram', userId, text });
+        clearInterval(typingTimer);
+        await safeSend(bot, chatId, reply);
+        return;
+      }
+      const progressMarks = new Set();
+      const flowResult = await runTigerFlow(text, {
+        flow: 'design',
+        maxTurns: 12,
+        metadata: { platform: 'telegram', userId, chatId },
+        onProgress: ({ phase, agent, task }) => {
+          if (phase === 'task_created' && task && !progressMarks.has('created')) {
+            progressMarks.add('created');
+            void safeSend(bot, chatId, `Tiger: task created \\(${task.task_id}\\)\\. Starting Designer\\.`, { parse_mode: 'MarkdownV2' });
+            return;
+          }
+          if (phase !== 'worker_done' || !task) return;
+          const key = `${agent}:${task.next_agent}:${task.thread ? task.thread.length : 0}`;
+          if (progressMarks.has(key)) return;
+          progressMarks.add(key);
+          let msg = `Tiger: ${agent} finished. Next: ${task.next_agent}.`;
+          if (agent === 'senior_eng' && task.next_agent === 'designer') {
+            msg = 'Tiger: Senior Eng requested changes. Designer is revising.';
+          } else if (agent === 'senior_eng' && task.next_agent === 'spec_writer') {
+            msg = 'Tiger: Senior Eng approved. Spec Writer is drafting the final spec.';
+          }
+          void safeSend(bot, chatId, msg);
+        }
+      });
+
+      clearInterval(typingTimer);
+      if (flowResult.ok) {
+        await safeSend(bot, chatId, flowResult.result || '(empty result)');
+        return;
+      }
 
       const reply = await handleMessage({ platform: 'telegram', userId, text });
-      clearInterval(typingTimer);
       await safeSend(bot, chatId, reply);
     } catch (err) {
       if (typingTimer) clearInterval(typingTimer);

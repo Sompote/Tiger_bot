@@ -9,6 +9,7 @@ const { startReflectionScheduler } = require('./agent/reflectionScheduler');
 const { initVectorMemory } = require('./agent/db');
 const { startTelegramBot } = require('./telegram/bot');
 const { handleMessage } = require('./agent/mainAgent');
+const { ensureSwarmLayout } = require('./swarm');
 
 // Source root — always inside the npm package
 const srcRoot = path.resolve(__dirname, '..');
@@ -51,6 +52,7 @@ function getExistingSupervisorPid() {
 
 function startTelegramInBackground() {
   ensureContextFiles();
+  ensureSwarmLayout();
   const existingPid = getExistingSupervisorPid();
   if (existingPid && isPidRunning(existingPid)) {
     process.stdout.write(`Telegram background bot is already running (PID ${existingPid}).\n`);
@@ -113,6 +115,7 @@ function printVectorMemoryStatus(vectorStatus) {
 
 async function runCli() {
   ensureContextFiles();
+  ensureSwarmLayout();
   startReflectionScheduler();
   const vectorStatus = initVectorMemory();
   printVectorMemoryStatus(vectorStatus);
@@ -171,6 +174,7 @@ async function main() {
 
   if (isTelegramMode(argv)) {
     ensureContextFiles();
+    ensureSwarmLayout();
     startReflectionScheduler();
     const vectorStatus = initVectorMemory();
     printVectorMemoryStatus(vectorStatus);

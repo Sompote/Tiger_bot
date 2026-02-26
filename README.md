@@ -14,7 +14,12 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.2.5
+## 🆕 What's New — v0.3.0 (Agentic Swarm version)
+
+- **Agentic swarm mode** — Tiger can route Telegram requests through an internal file-based agent swarm (`designer`, `senior_eng`, `spec_writer`, etc.)
+- **Swarm Telegram commands** — added `/swarm on|off`, `/status`, `/agents`, `/cancel`, and `/ask <agent> ...`
+
+### v0.2.5
 
 - **Context-file mirror compatibility** — if legacy root files like `./soul.md` or `./ownskill.md` already exist, Tiger now mirrors updates to them automatically while continuing to use `DATA_DIR` as the canonical source
 - **README path clarification** — docs now explicitly distinguish canonical `DATA_DIR` files from optional legacy root mirrors
@@ -214,7 +219,31 @@ MOONSHOT_TOKEN_LIMIT=100000
 | `/tokens` | Show today's token usage per provider |
 | `/limit` | Show daily token limits per provider |
 | `/limit <provider> <n>` | Set daily token limit (0 = unlimited, e.g. `/limit zai 100000`) |
+| `/swarm` | Show agent swarm status (ON/OFF) |
+| `/swarm <on|off>` | Enable or disable internal swarm routing for normal messages |
+| `/status` | Show swarm task queues (`pending`, `in_progress`, `done`, `failed`) |
+| `/agents` | Show internal swarm agents and availability |
+| `/cancel <task_id>` | Cancel a swarm task |
+| `/ask <agent> <question>` | Ask a specific internal agent role directly |
 | `/help` | Show all commands |
+
+### Swarm Settings (`/swarm`)
+
+Tiger v0.3.0 includes an internal agent swarm for Telegram message routing.
+
+- **Default:** swarm is **ON** when the Telegram bot starts
+- **`/swarm on`**: regular user messages are routed through the internal swarm flow (e.g. `designer -> senior_eng -> spec_writer`)
+- **`/swarm off`**: regular user messages skip the swarm and go directly to the standard Tiger agent reply path
+- **Scope:** this toggle affects only **normal chat messages** (not admin commands like `/api`, `/tokens`, `/limit`)
+- **Current persistence:** the `/swarm` toggle is currently **in-memory only** and resets to **ON** after bot restart
+
+Examples:
+
+```text
+/swarm
+/swarm off
+/swarm on
+```
 
 ---
 
