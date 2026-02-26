@@ -17,7 +17,7 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 ## 🆕 What's New — v0.3.0 (Agentic Swarm version)
 
 - **Agentic swarm mode** — Tiger can route Telegram requests through an internal file-based agent swarm (`designer`, `senior_eng`, `spec_writer`, etc.)
-- **Swarm Telegram commands** — added `/swarm on|off`, `/status`, `/agents`, `/cancel`, and `/ask <agent> ...`
+- **Swarm Telegram commands** — added `/swarm on|off`, `/status`, `/task`, `/agents`, `/cancel`, and `/ask <agent> ...`
 
 ### v0.2.5
 
@@ -205,6 +205,16 @@ ZAI_TOKEN_LIMIT=100000
 MINIMAX_TOKEN_LIMIT=100000
 CLAUDE_TOKEN_LIMIT=500000
 MOONSHOT_TOKEN_LIMIT=100000
+
+# Provider request timeouts (ms)
+KIMI_TIMEOUT_MS=120000
+ZAI_TIMEOUT_MS=120000
+
+# Swarm worker-step timeout (0 = no extra swarm timeout)
+SWARM_AGENT_TIMEOUT_MS=120000
+
+# Swarm only: on timeout/network/API error, retry via next provider
+SWARM_ROUTE_ON_PROVIDER_ERROR=true
 ```
 
 ### Auto-Switch Behaviour
@@ -229,6 +239,10 @@ MOONSHOT_TOKEN_LIMIT=100000
 | `/swarm` | Show agent swarm status (ON/OFF) |
 | `/swarm <on|off>` | Enable or disable internal swarm routing for normal messages |
 | `/status` | Show swarm task queues (`pending`, `in_progress`, `done`, `failed`) |
+| `/task` | List swarm tasks across queues |
+| `/task continue <task_id>` | Resume a failed/stuck swarm task from the last failed agent |
+| `/task retry <task_id>` | Alias of `/task continue <task_id>` |
+| `/task delete <task_id>` | Delete a swarm task file from queue storage |
 | `/agents` | Show internal swarm agents and availability |
 | `/cancel <task_id>` | Cancel a swarm task |
 | `/ask <agent> <question>` | Ask a specific internal agent role directly |
@@ -243,6 +257,13 @@ Tiger v0.3.0 includes an internal agent swarm for Telegram message routing.
 - **`/swarm off`**: regular user messages skip the swarm and go directly to the standard Tiger agent reply path
 - **Scope:** this toggle affects only **normal chat messages** (not admin commands like `/api`, `/tokens`, `/limit`)
 - **Current persistence:** the `/swarm` toggle is currently **in-memory only** and resets to **ON** after bot restart
+- **Task resume:** use `/task continue <task_id>` (or `/task retry <task_id>`) to continue a failed timeout/API-error task without starting over
+
+### Swarm Timeout / Failover (`.env`)
+
+- `SWARM_AGENT_TIMEOUT_MS`: timeout per swarm worker step (e.g. one `designer` turn). `0` disables the extra swarm timeout.
+- `SWARM_ROUTE_ON_PROVIDER_ERROR=true|false`: swarm-only provider failover on timeout/network/API errors.
+- Provider timeouts are separate and provider-specific, for example `KIMI_TIMEOUT_MS`, `ZAI_TIMEOUT_MS`, `CLAUDE_TIMEOUT_MS`.
 
 Examples:
 
@@ -250,6 +271,9 @@ Examples:
 /swarm
 /swarm off
 /swarm on
+/task
+/task retry task_xxx
+/task delete task_xxx
 ```
 
 ### Swarm Agent Files (Manual Customization)

@@ -191,6 +191,14 @@ function cancelTask(taskId, by = 'tiger') {
   return { ok: true, task };
 }
 
+function deleteTask(taskId) {
+  const found = findTask(taskId);
+  if (!found) return { ok: false, error: 'Task not found' };
+  const { filePath, task, bucket } = found;
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  return { ok: true, task, bucket };
+}
+
 function listInProgressTasks() {
   return listTasks('in_progress');
 }
@@ -221,6 +229,7 @@ module.exports = {
   claimPendingTask,
   releaseTask,
   cancelTask,
+  deleteTask,
   listAgentFolders,
   nowIso
 };

@@ -8,7 +8,9 @@ const { getProvider } = require('../apiProviders');
 const {
   ensureSwarmLayout,
   runTigerFlow,
+  continueTask,
   cancelTask,
+  deleteTask,
   askAgent,
   getAgentsStatus,
   getStatusSummary
@@ -166,6 +168,7 @@ function startTelegramBot() {
     { command: 'limit',  description: 'Show or set daily token limit per provider' },
     { command: 'swarm',  description: 'Enable or disable agent swarm' },
     { command: 'status', description: 'Show swarm task status' },
+    { command: 'task',   description: 'Continue a failed swarm task' },
     { command: 'agents', description: 'Show swarm agents' },
     { command: 'help',   description: 'Show all available commands' }
   ]).catch((err) => {
@@ -270,6 +273,72 @@ function startTelegramBot() {
       return;
     }
 
+    if (text.startsWith('/task')) {
+      const arg = text.slice(5).trim();
+      if (!arg || /^list$/i.test(arg)) {
+        const status = getStatusSummary();
+        const lines = ['🗂️ *Swarm Tasks*', ''];
+        for (const bucketName of ['in_progress', 'pending', 'failed', 'done']) {
+          const tasks = Array.isArray(status[bucketName]) ? status[bucketName] : [];
+          lines.push(`${bucketName}: *${tasks.length}*`);
+          for (const t of tasks.slice(0, 10)) {
+            lines.push(`- \`${t.task_id}\` → \`${t.next_agent}\` | ${t.goal}`);
+          }
+          if (tasks.length > 10) lines.push(`- ... and ${tasks.length - 10} more`);
+        }
+        lines.push('');
+        lines.push('Use `/task continue <id>`, `/task retry <id>`, `/task delete <id>`');
+        await safeSend(bot, chatId, lines.join('\n'), MD);
+        return;
+      }
+
+      const actionMatch = arg.match(/^(continue|retry|delete)\s+(\S+)$/i);
+      if (!actionMatch) {
+        await safeSend(bot, chatId, 'Usage: `/task` or `/task <continue|retry|delete> task_xxx`', MD);
+        return;
+      }
+      const action = actionMatch[1].toLowerCase();
+      const taskId = actionMatch[2];
+
+      if (action === 'delete') {
+        const out = deleteTask(taskId);
+        if (!out.ok) {
+          await safeSend(bot, chatId, `❌ ${out.error}`);
+          return;
+        }
+        await safeSend(bot, chatId, `🗑️ Deleted \`${taskId}\` from *${out.bucket}*`, MD);
+        return;
+      }
+
+      const progressMarks = new Set();
+      try {
+        await safeSendTyping(bot, chatId);
+        const out = await continueTask(taskId, {
+          onProgress: ({ phase, agent, task }) => {
+            if (phase === 'worker_done' && task) {
+              const key = `${agent}:${task.next_agent}:${task.thread ? task.thread.length : 0}`;
+              if (progressMarks.has(key)) return;
+              progressMarks.add(key);
+              void safeSend(bot, chatId, `Tiger: resumed task ${task.task_id} - ${agent} finished. Next: ${task.next_agent}.`);
+            }
+          }
+        });
+        if (out.ok) {
+          await safeSend(bot, chatId, out.result || '(empty result)');
+          return;
+        }
+        await safeSend(
+          bot,
+          chatId,
+          `⚠️ ${action} failed: ${out.error || 'unknown error'}${out.task ? `\nTask: \`${out.task.task_id}\` next=\`${out.task.next_agent}\` status=\`${out.task.status}\`` : ''}`,
+          MD
+        );
+      } catch (err) {
+        await safeSend(bot, chatId, `⚠️ /task ${action} failed: ${err.message}`);
+      }
+      return;
+    }
+
     if (text.startsWith('/ask ')) {
       const parts = text.slice(5).trim();
       const [agentNameRaw, ...rest] = parts.split(/\s+/);
@@ -301,6 +370,10 @@ function startTelegramBot() {
         '/swarm \\- Show swarm on/off status',
         '/swarm `<on|off>` \\- Enable or disable swarm routing',
         '/status \\- Show swarm task status',
+        '/task \\- List swarm tasks',
+        '/task `continue <task_id>` \\- Resume a failed swarm task',
+        '/task `retry <task_id>` \\- Alias of continue',
+        '/task `delete <task_id>` \\- Delete a swarm task file',
         '/agents \\- Show internal swarm agents',
         '/cancel `<task_id>` \\- Cancel a swarm task',
         '/ask `<agent> <question>` \\- Ask a specific internal agent',

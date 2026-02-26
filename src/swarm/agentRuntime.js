@@ -14,7 +14,8 @@ const {
   appendThread,
   claimPendingTask,
   releaseTask,
-  cancelTask
+  cancelTask,
+  deleteTask
 } = require('./taskBus');
 
 const AGENT_DEFS = {
@@ -212,6 +213,9 @@ async function runWorkerTurn(agentName) {
     return { ok: true, idle: false, agent: agentName, task: out.task };
   } catch (err) {
     appendThread(task, agentName, `error: ${err.message}`);
+    if (!task.metadata || typeof task.metadata !== 'object') task.metadata = {};
+    task.metadata.last_failed_agent = agentName;
+    task.metadata.last_error = String(err && err.message ? err.message : 'unknown error');
     task.status = 'failed';
     task.next_agent = 'tiger';
     const out = releaseTask(task, filePath, 'failed');
@@ -296,6 +300,61 @@ async function runTigerFlow(goal, opts = {}) {
   return { ok: true, task: final.task, result: final.task.result || '' };
 }
 
+function inferResumeAgent(task) {
+  const meta = task && task.metadata && typeof task.metadata === 'object' ? task.metadata : {};
+  const fromMeta = String(meta.last_failed_agent || '').trim();
+  if (fromMeta && AGENT_DEFS[fromMeta] && fromMeta !== 'tiger') return fromMeta;
+
+  const thread = Array.isArray(task && task.thread) ? task.thread : [];
+  for (let i = thread.length - 1; i >= 0; i -= 1) {
+    const m = thread[i] || {};
+    const by = String(m.by || '').trim();
+    const msg = String(m.msg || '').trim();
+    if (by && by !== 'tiger' && AGENT_DEFS[by] && /^error:/i.test(msg)) return by;
+  }
+
+  const next = String(task && task.next_agent || '').trim();
+  if (next && next !== 'tiger' && AGENT_DEFS[next]) return next;
+  return pickFlowFirstAgent(task && task.flow);
+}
+
+async function continueTask(taskId, opts = {}) {
+  ensureSwarmLayout();
+  const found = findTask(taskId);
+  if (!found) return { ok: false, error: 'Task not found' };
+
+  let { task, filePath, bucket } = found;
+  if (bucket === 'done') {
+    return { ok: false, error: 'Task is already done', task };
+  }
+
+  if (bucket === 'failed') {
+    const resumeAgent = inferResumeAgent(task);
+    task.status = 'pending';
+    task.next_agent = resumeAgent;
+    appendThread(task, 'tiger', `resume requested: continue from ${resumeAgent}`);
+    const released = releaseTask(task, filePath, 'pending');
+    task = released.task;
+    filePath = released.filePath;
+    bucket = released.bucket;
+    void filePath;
+    void bucket;
+  } else if (bucket === 'in_progress') {
+    // Recovery path for stale stuck tasks.
+    task.status = 'pending';
+    appendThread(task, 'tiger', 'resume requested: moved stale in_progress task back to pending');
+    const released = releaseTask(task, filePath, 'pending');
+    task = released.task;
+  }
+
+  const progress = await runTaskToTiger(taskId, opts);
+  if (!progress.ok) return progress;
+
+  const final = extractTigerResult(taskId);
+  if (!final.ok) return final;
+  return { ok: true, task: final.task, result: final.task.result || '' };
+}
+
 async function askAgent(agentName, prompt) {
   ensureSwarmLayout();
   if (!AGENT_DEFS[agentName] || agentName === 'tiger') {
@@ -341,6 +400,8 @@ module.exports = {
   runWorkerTurn,
   runTaskToTiger,
   runTigerFlow,
+  continueTask,
+  deleteTask,
   extractTigerResult,
   cancelTask,
   askAgent,
