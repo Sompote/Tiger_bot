@@ -79,6 +79,7 @@ async function chatCompletion(messages, options = {}) {
   // Build candidate list: active provider first, then fallbacks
   const activeId = tokenManager.getCurrentProvider();
   const candidates = [activeId, ...tokenManager.getNextCandidates(activeId)];
+  const fallbackOnAnyProviderError = Boolean(options.fallbackOnAnyProviderError);
 
   let firstError = null;
 
@@ -106,6 +107,15 @@ async function chatCompletion(messages, options = {}) {
         const switched = tokenManager.autoSwitch(reason);
         if (switched.switched) {
           process.stderr.write(`[llm] ${reason} on ${providerId} → switched to ${switched.to}\n`);
+        }
+        continue;
+      }
+
+      // Optional broader failover (used by swarm): timeout/network/API errors can route to next provider.
+      if (fallbackOnAnyProviderError) {
+        const switched = tokenManager.autoSwitch('provider_error');
+        if (switched.switched) {
+          process.stderr.write(`[llm] provider_error on ${providerId} → switched to ${switched.to}\n`);
         }
         continue;
       }

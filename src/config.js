@@ -101,6 +101,9 @@ const vectorDbPath = path.resolve(process.env.VECTOR_DB_PATH || './db/memory.sql
 const sqliteVecExtension = cleanEnvValue(process.env.SQLITE_VEC_EXTENSION || '');
 const memoryIngestEveryTurns = Math.max(1, Number(process.env.MEMORY_INGEST_EVERY_TURNS || 2));
 const memoryIngestMinChars = Math.max(20, Number(process.env.MEMORY_INGEST_MIN_CHARS || 140));
+const swarmAgentTimeoutMs = Math.max(0, Number(process.env.SWARM_AGENT_TIMEOUT_MS || 0));
+const swarmRouteOnProviderError =
+  ['1', 'true', 'yes', 'on'].includes(cleanEnvValue(process.env.SWARM_ROUTE_ON_PROVIDER_ERROR || '').toLowerCase());
 
 module.exports = {
   kimiProvider,
@@ -127,6 +130,8 @@ module.exports = {
   sqliteVecExtension,
   memoryIngestEveryTurns,
   memoryIngestMinChars,
+  swarmAgentTimeoutMs,
+  swarmRouteOnProviderError,
   dbPath: path.resolve(process.env.DB_PATH || './db/agent.json'),
   maxMessages: Number(process.env.MAX_MESSAGES || 200),
   recentMessages: Number(process.env.RECENT_MESSAGES || 40)

@@ -81,6 +81,16 @@ function handleApiCommand(arg) {
   if (!result.ok) return `❌ Switch failed: ${result.error}`;
 
   const p = getProvider(target);
+  const overLimit = tokenManager.isOverLimit(target);
+  if (overLimit) {
+    return [
+      `✅ Active provider set to *${p.name}* (\`${target}\`)`,
+      `Model: \`${p.chatModel}\``,
+      '',
+      `⚠️ *${target}* is currently over its daily token limit, so requests will fall back to another provider.`,
+      `Use \`/limit ${target} 0\` (unlimited) or raise its limit, then try again.`
+    ].join('\n');
+  }
   return `✅ Switched to *${p.name}* (\`${target}\`)\nModel: \`${p.chatModel}\``;
 }
 
@@ -322,7 +332,6 @@ function startTelegramBot() {
       const progressMarks = new Set();
       const flowResult = await runTigerFlow(text, {
         flow: 'design',
-        maxTurns: 12,
         metadata: { platform: 'telegram', userId, chatId },
         onProgress: ({ phase, agent, task }) => {
           if (phase === 'task_created' && task && !progressMarks.has('created')) {

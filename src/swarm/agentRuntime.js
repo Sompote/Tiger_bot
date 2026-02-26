@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion } = require('../llmClient');
+const { swarmAgentTimeoutMs, swarmRouteOnProviderError } = require('../config');
 const {
   AGENTS_DIR,
   ensureSwarmLayout,
@@ -54,7 +55,9 @@ async function llmText(system, user) {
   const out = await chatCompletion([
     { role: 'system', content: system },
     { role: 'user', content: user }
-  ]);
+  ], {
+    fallbackOnAnyProviderError: swarmRouteOnProviderError
+  });
   return String(out && out.content ? out.content : '').trim();
 }
 
@@ -175,6 +178,24 @@ async function processWorkerTask(agentName, task) {
   throw new Error(`Unsupported worker: ${agentName}`);
 }
 
+function withTimeout(promise, timeoutMs, label) {
+  const ms = Number(timeoutMs || 0);
+  if (!Number.isFinite(ms) || ms <= 0) return promise;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms);
+    Promise.resolve(promise).then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 async function runWorkerTurn(agentName) {
   ensureSwarmLayout();
   const claim = claimPendingTask(agentName);
@@ -182,7 +203,11 @@ async function runWorkerTurn(agentName) {
 
   let { task, filePath } = claim;
   try {
-    task = await processWorkerTask(agentName, task);
+    task = await withTimeout(
+      processWorkerTask(agentName, task),
+      swarmAgentTimeoutMs,
+      `swarm agent ${agentName}`
+    );
     const out = releaseTask(task, filePath, task.status === 'failed' ? 'failed' : 'pending');
     return { ok: true, idle: false, agent: agentName, task: out.task };
   } catch (err) {
@@ -214,10 +239,11 @@ function extractTigerResult(taskId) {
 }
 
 async function runTaskToTiger(taskId, opts = {}) {
-  const maxTurns = Math.max(1, Number(opts.maxTurns || 12));
+  const rawMaxTurns = Number(opts.maxTurns);
+  const maxTurns = Number.isFinite(rawMaxTurns) && rawMaxTurns > 0 ? Math.floor(rawMaxTurns) : null;
   const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
 
-  for (let i = 0; i < maxTurns; i += 1) {
+  for (let i = 0; maxTurns == null || i < maxTurns; i += 1) {
     const found = findTask(taskId);
     if (!found) return { ok: false, error: 'Task disappeared' };
     const { task } = found;

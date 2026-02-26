@@ -110,6 +110,13 @@ tiger status                  # check if running
 tiger stop                    # stop
 ```
 
+**Restart background bot (after editing `.env` in this repo):**
+```bash
+cd /root/tiger
+npm run telegram:stop
+npm run telegram:bg
+```
+
 Logs: `~/.tiger/logs/telegram.out.log`
 
 ---
