@@ -245,6 +245,49 @@ Examples:
 /swarm on
 ```
 
+### Swarm Agent Files (Manual Customization)
+
+Tiger creates a local swarm workspace so you can manually customize each agent's behavior.
+
+Default folders (project/runtime root):
+
+```text
+agents/
+  tiger/
+  designer/
+  senior_eng/
+  spec_writer/
+  scout/
+  coder/
+  critic/
+tasks/
+  pending/
+  in_progress/
+  done/
+  failed/
+```
+
+Each agent folder includes files such as:
+
+- `soul.md` — the agent's personality, rules, and mindset
+- `ownskill.md` — what the agent is good at / preferred workflow
+- `experience.json` — learned lessons and task stats
+- `memory.md` — long-form notes/patterns
+- `human.md` — only for `agents/tiger/` (user preferences)
+
+Manual setup / editing:
+
+- Start the bot once (`tiger telegram` or `tiger start`) and Tiger will auto-create missing `agents/` and `tasks/` folders
+- You can then open and edit files like `agents/designer/soul.md` or `agents/senior_eng/soul.md` manually
+- Your edits are used on future swarm runs (for example `/ask designer ...` or normal swarm-routed messages)
+- Keep edits in plain Markdown/JSON and avoid deleting required files while the bot is running
+
+Example customization ideas:
+
+- Make `designer` more creative / visual
+- Make `senior_eng` stricter about security, error handling, and scalability
+- Make `spec_writer` produce a specific document format your team uses
+
 ---
 
 ## 🧠 Memory & Context
