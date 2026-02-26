@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
-**Cognitive AI Agent** with persistent long-term memory, multi-provider LLM support, self-learning, and Telegram bot integration — designed for 24/7 autonomous operation on Linux.
+**Agentic Swarm AI Agent** with persistent long-term memory, multi-provider LLM support, token management, self-learning, and Telegram bot integration — designed for 24/7 autonomous operation on Linux.
 
 Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
