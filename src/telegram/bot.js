@@ -15,6 +15,16 @@ const {
   getAgentsStatus,
   getStatusSummary
 } = require('../swarm');
+const {
+  ensureSwarmConfigLayout,
+  listArchitectureFiles,
+  listTaskStyleFiles,
+  readArchitectureText,
+  writeArchitectureText,
+  readTaskStyleText,
+  writeTaskStyleText,
+  updateDefaultStyleArchitecture
+} = require('../swarm/configStore');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -158,6 +168,7 @@ function startTelegramBot() {
   }
 
   ensureSwarmLayout();
+  ensureSwarmConfigLayout();
   const bot = new TelegramBot(telegramBotToken, { polling: true });
   let swarmEnabled = true;
 
@@ -169,6 +180,8 @@ function startTelegramBot() {
     { command: 'swarm',  description: 'Enable or disable agent swarm' },
     { command: 'status', description: 'Show swarm task status' },
     { command: 'task',   description: 'Continue a failed swarm task' },
+    { command: 'architecture', description: 'View/update swarm architecture YAML' },
+    { command: 'taskstyle', description: 'View/update task style YAML' },
     { command: 'agents', description: 'Show swarm agents' },
     { command: 'help',   description: 'Show all available commands' }
   ]).catch((err) => {
@@ -229,6 +242,99 @@ function startTelegramBot() {
         return;
       }
       await safeSend(bot, chatId, 'Usage: `/swarm on` or `/swarm off`', MD);
+      return;
+    }
+
+    if (text.startsWith('/architecture')) {
+      const arg = text.slice('/architecture'.length).trim();
+      try {
+        if (!arg || /^list$/i.test(arg)) {
+          const files = listArchitectureFiles();
+          const lines = ['🧩 *Architecture Files*', ''];
+          for (const f of files) lines.push(`- \`${f}\``);
+          lines.push('');
+          lines.push('Use `/architecture show <file>`');
+          lines.push('Use `/architecture write <file>` then newline + full YAML');
+          lines.push('Use `/architecture use <file>` to set default task style architecture');
+          await safeSend(bot, chatId, lines.join('\n'), MD);
+          return;
+        }
+
+        const showMatch = arg.match(/^show\s+(\S+)$/i);
+        if (showMatch) {
+          const file = showMatch[1];
+          const yaml = readArchitectureText(file);
+          await safeSend(bot, chatId, `Architecture: ${file}\n\n${yaml}`);
+          return;
+        }
+
+        const useMatch = arg.match(/^use\s+(\S+)$/i);
+        if (useMatch) {
+          const file = useMatch[1];
+          updateDefaultStyleArchitecture(file);
+          await safeSend(bot, chatId, `✅ default task style now uses architecture \`${file}\``, MD);
+          return;
+        }
+
+        const writeMatch = text.match(/^\/architecture\s+write\s+(\S+)\s*\n([\s\S]+)$/i);
+        if (writeMatch) {
+          const file = writeMatch[1];
+          const yaml = writeMatch[2];
+          writeArchitectureText(file, yaml);
+          await safeSend(bot, chatId, `✅ wrote architecture \`${file}\``, MD);
+          return;
+        }
+
+        await safeSend(
+          bot,
+          chatId,
+          'Usage:\n/architecture\n/architecture list\n/architecture show <file>\n/architecture use <file>\n/architecture write <file> + newline + yaml'
+        );
+      } catch (err) {
+        await safeSend(bot, chatId, `❌ /architecture failed: ${err.message}`);
+      }
+      return;
+    }
+
+    if (text.startsWith('/taskstyle')) {
+      const arg = text.slice('/taskstyle'.length).trim();
+      try {
+        if (!arg || /^list$/i.test(arg)) {
+          const files = listTaskStyleFiles();
+          const lines = ['📝 *Task Style Files*', ''];
+          for (const f of files) lines.push(`- \`${f}\``);
+          lines.push('');
+          lines.push('Use `/taskstyle show <file>`');
+          lines.push('Use `/taskstyle write <file>` then newline + full YAML');
+          await safeSend(bot, chatId, lines.join('\n'), MD);
+          return;
+        }
+
+        const showMatch = arg.match(/^show\s+(\S+)$/i);
+        if (showMatch) {
+          const file = showMatch[1];
+          const yaml = readTaskStyleText(file);
+          await safeSend(bot, chatId, `Task style: ${file}\n\n${yaml}`);
+          return;
+        }
+
+        const writeMatch = text.match(/^\/taskstyle\s+write\s+(\S+)\s*\n([\s\S]+)$/i);
+        if (writeMatch) {
+          const file = writeMatch[1];
+          const yaml = writeMatch[2];
+          writeTaskStyleText(file, yaml);
+          await safeSend(bot, chatId, `✅ wrote task style \`${file}\``, MD);
+          return;
+        }
+
+        await safeSend(
+          bot,
+          chatId,
+          'Usage:\n/taskstyle\n/taskstyle list\n/taskstyle show <file>\n/taskstyle write <file> + newline + yaml'
+        );
+      } catch (err) {
+        await safeSend(bot, chatId, `❌ /taskstyle failed: ${err.message}`);
+      }
       return;
     }
 
@@ -374,6 +480,13 @@ function startTelegramBot() {
         '/task `continue <task_id>` \\- Resume a failed swarm task',
         '/task `retry <task_id>` \\- Alias of continue',
         '/task `delete <task_id>` \\- Delete a swarm task file',
+        '/architecture \\- List architecture YAML files',
+        '/architecture `show <file>` \\- Show architecture YAML',
+        '/architecture `use <file>` \\- Set default architecture',
+        '/architecture `write <file>` + newline + yaml \\- Save architecture YAML',
+        '/taskstyle \\- List task style YAML files',
+        '/taskstyle `show <file>` \\- Show task style YAML',
+        '/taskstyle `write <file>` + newline + yaml \\- Save task style YAML',
         '/agents \\- Show internal swarm agents',
         '/cancel `<task_id>` \\- Cancel a swarm task',
         '/ask `<agent> <question>` \\- Ask a specific internal agent',
@@ -404,7 +517,6 @@ function startTelegramBot() {
       }
       const progressMarks = new Set();
       const flowResult = await runTigerFlow(text, {
-        flow: 'design',
         metadata: { platform: 'telegram', userId, chatId },
         onProgress: ({ phase, agent, task }) => {
           if (phase === 'task_created' && task && !progressMarks.has('created')) {

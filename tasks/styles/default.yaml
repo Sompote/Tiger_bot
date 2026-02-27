@@ -1,0 +1,5 @@
+version: 1
+name: default
+architecture: tiger_parallel_design.yaml
+flow: architecture
+objective_prefix: "Objective:"

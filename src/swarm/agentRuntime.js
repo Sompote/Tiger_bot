@@ -3,7 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 const { chatCompletion } = require('../llmClient');
-const { swarmAgentTimeoutMs, swarmRouteOnProviderError } = require('../config');
+const {
+  swarmAgentTimeoutMs,
+  swarmRouteOnProviderError,
+  swarmDefaultFlow,
+  swarmFirstAgentPolicy,
+  swarmFirstAgent
+} = require('../config');
 const {
   AGENTS_DIR,
   ensureSwarmLayout,
@@ -11,12 +17,18 @@ const {
   listInProgressTasks,
   listTasks,
   findTask,
+  saveTaskInPlace,
   appendThread,
   claimPendingTask,
   releaseTask,
   cancelTask,
   deleteTask
 } = require('./taskBus');
+const {
+  ensureSwarmConfigLayout,
+  loadTaskStyle,
+  loadArchitecture
+} = require('./configStore');
 
 const AGENT_DEFS = {
   tiger: { label: 'Tiger', kind: 'orchestrator' },
@@ -27,6 +39,7 @@ const AGENT_DEFS = {
   coder: { label: 'Coder', kind: 'worker' },
   critic: { label: 'Critic', kind: 'worker' }
 };
+const WORKER_AGENT_NAMES = Object.keys(AGENT_DEFS).filter((n) => n !== 'tiger');
 
 function safeJsonParse(text, fallback) {
   try {
@@ -52,13 +65,81 @@ function renderThread(task) {
     .join('\n');
 }
 
-async function llmText(system, user) {
-  const out = await chatCompletion([
+function stageRef(id) {
+  return `stage:${id}`;
+}
+
+function isStageRef(value) {
+  return String(value || '').startsWith('stage:');
+}
+
+function stageIdFromRef(value) {
+  return String(value || '').replace(/^stage:/, '').trim();
+}
+
+function getTaskContext(task) {
+  if (!task.metadata || typeof task.metadata !== 'object') task.metadata = {};
+  if (!task.metadata.swarm_ctx || typeof task.metadata.swarm_ctx !== 'object') {
+    task.metadata.swarm_ctx = {};
+  }
+  return task.metadata.swarm_ctx;
+}
+
+function resolveRoleMap(architecture) {
+  const out = {};
+  const agents = Array.isArray(architecture && architecture.agents) ? architecture.agents : [];
+  for (const row of agents) {
+    const id = String(row && row.id ? row.id : '').trim();
+    if (!id) continue;
+    out[id] = {
+      id,
+      runtimeAgent: String(row.runtime_agent || id).trim(),
+      role: String(row.role || '').trim()
+    };
+  }
+  return out;
+}
+
+function getStageById(architecture, id) {
+  const stageId = String(id || '').trim();
+  const stages = Array.isArray(architecture && architecture.stages) ? architecture.stages : [];
+  return stages.find((s) => String(s && s.id ? s.id : '').trim() === stageId) || null;
+}
+
+function parseReviewerDecision(raw, fallbackRoleId) {
+  const parsed = safeJsonParse(raw, null);
+  if (parsed && typeof parsed === 'object') {
+    return {
+      approved: Boolean(parsed.approved),
+      selectedRole: String(parsed.selected_role || fallbackRoleId || '').trim(),
+      feedback: String(parsed.feedback || '').trim(),
+      reasoning: String(parsed.reasoning || '').trim(),
+      calculationReport: String(parsed.calculation_report || '').trim()
+    };
+  }
+  return {
+    approved: /approved\s*✅?|approve\b/i.test(raw) && !/reject/i.test(raw),
+    selectedRole: String(fallbackRoleId || '').trim(),
+    feedback: String(raw || '').trim(),
+    reasoning: '',
+    calculationReport: ''
+  };
+}
+
+async function llmText(system, user, stepLabel) {
+  // Step-level timeout: each LLM call gets its own fresh timer (hook reset)
+  const stepTimeoutMs = Number(process.env.SWARM_AGENT_TIMEOUT_MS || swarmAgentTimeoutMs || 720000);
+  const label = stepLabel || 'llmText';
+
+  const llmCall = chatCompletion([
     { role: 'system', content: system },
     { role: 'user', content: user }
   ], {
     fallbackOnAnyProviderError: swarmRouteOnProviderError
   });
+
+  // Fresh timeout per LLM step — resets on every hook call
+  const out = await withTimeout(llmCall, stepTimeoutMs, `[step:${label}] LLM call`);
   return String(out && out.content ? out.content : '').trim();
 }
 
@@ -78,7 +159,7 @@ async function designerStep(task) {
     renderThread(task),
     'Return a revised design proposal for Senior Eng review.'
   ].join('\n\n');
-  const text = await llmText(system, user);
+  const text = await llmText(system, user, 'designer:propose');
   appendThread(task, 'designer', text || 'proposed initial design');
   task.next_agent = 'senior_eng';
   task.status = 'pending';
@@ -99,7 +180,7 @@ async function seniorEngStep(task) {
     'Conversation thread:',
     renderThread(task)
   ].join('\n\n');
-  const raw = await llmText(system, user);
+  const raw = await llmText(system, user, 'senior_eng:review');
   const parsed = safeJsonParse(raw, null);
 
   let approved = false;
@@ -138,7 +219,7 @@ async function specWriterStep(task) {
     renderThread(task),
     'Write the final spec now.'
   ].join('\n\n');
-  const spec = await llmText(system, user);
+  const spec = await llmText(system, user, 'spec_writer:write');
   appendThread(task, 'spec_writer', 'formal spec written');
   task.result = spec || '(empty spec)';
   task.next_agent = 'tiger';
@@ -155,7 +236,8 @@ async function genericWorkerStep(task, agentName, roleHint) {
       'Respond concisely and practically.',
       soul
     ].join('\n\n'),
-    [`Goal: ${task.goal}`, 'Thread:', renderThread(task)].join('\n\n')
+    [`Goal: ${task.goal}`, 'Thread:', renderThread(task)].join('\n\n'),
+    `${agentName}:step`
   );
   appendThread(task, agentName, text || `${agentName} completed step`);
   task.status = 'pending';
@@ -167,6 +249,165 @@ async function genericWorkerStep(task, agentName, roleHint) {
     task.result = text || task.result || '';
   }
   return task;
+}
+
+async function runRoleStep(task, roleId, runtimeAgent, roleHint, promptLines, opts = {}) {
+  const soul = getAgentSoul(runtimeAgent);
+  const text = await llmText(
+    [
+      `You are ${roleId} in Tiger swarm (runtime agent: ${runtimeAgent}).`,
+      roleHint,
+      'Respond concisely and practically.',
+      soul
+    ].join('\n\n'),
+    [
+      `Goal: ${task.goal}`,
+      'Thread:',
+      renderThread(task),
+      ...(Array.isArray(promptLines) ? promptLines : [])
+    ].join('\n\n'),
+    `${roleId}:step`
+  );
+  if (opts.appendThread !== false) {
+    appendThread(task, roleId, text || `${roleId} completed step`);
+  }
+  return text || '';
+}
+
+async function runArchitectureStage(task, architecture, stage) {
+  const roleMap = resolveRoleMap(architecture);
+  const ctx = getTaskContext(task);
+  const stageType = String(stage.type || '').toLowerCase();
+
+  if (stageType === 'parallel') {
+    const roles = Array.isArray(stage.roles) ? stage.roles.map((x) => String(x || '').trim()).filter(Boolean) : [];
+    const outputs = await Promise.all(roles.map(async (roleId) => {
+      const role = roleMap[roleId] || { runtimeAgent: roleId };
+      const text = await runRoleStep(
+        task,
+        roleId,
+        role.runtimeAgent,
+        'Create a concrete design candidate that fits the objective.',
+        ['Return one complete proposal.'],
+        { appendThread: false }
+      );
+      return { role: roleId, runtime_agent: role.runtimeAgent, text };
+    }));
+    for (const out of outputs) {
+      appendThread(task, out.role, out.text || `${out.role} completed step`);
+    }
+    const key = String(stage.store_as || `${stage.id}_outputs`).trim();
+    ctx[key] = outputs;
+    appendThread(task, 'tiger', `stage ${stage.id} completed with ${outputs.length} parallel outputs`);
+    task.next_agent = stage.next ? stageRef(stage.next) : 'tiger';
+    task.status = 'pending';
+    return task;
+  }
+
+  if (stageType === 'judge') {
+    const roleId = String(stage.role || '').trim();
+    const role = roleMap[roleId] || { runtimeAgent: roleId };
+    const candidateKey = String(stage.candidates_from || 'design_candidates').trim();
+    const candidates = Array.isArray(ctx[candidateKey]) ? ctx[candidateKey] : [];
+    const matrix = architecture && architecture.judgment_matrix ? architecture.judgment_matrix : {};
+    const criteria = Array.isArray(matrix.criteria) ? matrix.criteria : [];
+    const fallbackRole = candidates[0] && candidates[0].role ? candidates[0].role : '';
+
+    const decisionRaw = await runRoleStep(
+      task,
+      roleId,
+      role.runtimeAgent,
+      'Evaluate candidates and select the best one using the judgment matrix. Build an explicit calculation report for the selected candidate.',
+      [
+        `Candidates JSON: ${JSON.stringify(candidates)}`,
+        `Judgment matrix: ${JSON.stringify(criteria)}`,
+        'Return strict JSON only: {"approved":true|false,"selected_role":"...","feedback":"...","reasoning":"...","calculation_report":"..."}'
+      ]
+    );
+    const decision = parseReviewerDecision(decisionRaw, fallbackRole);
+    const selectedKey = String(stage.selected_role_key || 'selected_role').trim();
+    const feedbackKey = String(stage.feedback_key || 'reviewer_feedback').trim();
+    const calculationReportKey = String(stage.calculation_report_key || '').trim();
+    ctx[selectedKey] = decision.selectedRole || fallbackRole;
+    ctx[feedbackKey] = decision.feedback || '';
+    if (calculationReportKey) {
+      ctx[calculationReportKey] = decision.calculationReport || '';
+    }
+    appendThread(
+      task,
+      roleId,
+      `decision approved=${decision.approved} selected=${ctx[selectedKey]} feedback=${ctx[feedbackKey]}`
+    );
+    task.next_agent = stageRef(decision.approved ? stage.pass_next : stage.fail_next);
+    task.status = 'pending';
+    return task;
+  }
+
+  if (stageType === 'revise') {
+    const roleKey = String(stage.role_from_context || 'selected_role').trim();
+    const feedbackKey = String(stage.feedback_from_context || 'reviewer_feedback').trim();
+    const candidateKey = String(stage.candidates_from || 'design_candidates').trim();
+    const roleId = String(ctx[roleKey] || '').trim();
+    const role = roleMap[roleId] || { runtimeAgent: roleId || 'designer' };
+    const feedback = String(ctx[feedbackKey] || '').trim();
+    const revised = await runRoleStep(
+      task,
+      roleId || 'designer',
+      role.runtimeAgent,
+      'Revise your selected proposal based on reviewer feedback.',
+      [`Reviewer feedback: ${feedback}`]
+    );
+
+    if (Array.isArray(ctx[candidateKey])) {
+      ctx[candidateKey] = ctx[candidateKey].map((c) => (
+        c && c.role === roleId ? { ...c, text: revised } : c
+      ));
+    }
+    const selectedRoleValue = String(ctx[roleKey] || '').trim();
+    const keysToUpdate = Array.isArray(stage.update_context_keys_from_revised)
+      ? stage.update_context_keys_from_revised.map((x) => String(x || '').trim()).filter(Boolean)
+      : [];
+    if (roleId && selectedRoleValue === roleId) {
+      for (const key of keysToUpdate) {
+        ctx[key] = revised;
+      }
+    }
+    appendThread(task, 'tiger', `revision completed by ${roleId || 'designer'}`);
+    task.next_agent = stage.next ? stageRef(stage.next) : 'tiger';
+    task.status = 'pending';
+    return task;
+  }
+
+  if (stageType === 'final') {
+    const roleId = String(stage.role || '').trim();
+    const role = roleMap[roleId] || { runtimeAgent: roleId };
+    const sourceKey = String(stage.source_from_context || 'design_candidates').trim();
+    const source = ctx[sourceKey];
+    const outputSections = Array.isArray(stage.output_sections)
+      ? stage.output_sections.map((x) => String(x || '').trim()).filter(Boolean)
+      : [];
+    const outputNotes = String(stage.output_notes || '').trim();
+    const finalPromptLines = [`Source context JSON: ${JSON.stringify(source || null)}`];
+    if (outputSections.length) {
+      finalPromptLines.push(`Required output sections: ${outputSections.join(', ')}`);
+    }
+    if (outputNotes) {
+      finalPromptLines.push(`Output requirements: ${outputNotes}`);
+    }
+    const finalText = await runRoleStep(
+      task,
+      roleId,
+      role.runtimeAgent,
+      'Write the final polished specification from the selected and revised design.',
+      finalPromptLines
+    );
+    task.result = finalText;
+    task.next_agent = 'tiger';
+    task.status = 'pending';
+    return task;
+  }
+
+  throw new Error(`Unsupported stage type: ${stage.type}`);
 }
 
 async function processWorkerTask(agentName, task) {
@@ -202,13 +443,11 @@ async function runWorkerTurn(agentName) {
   const claim = claimPendingTask(agentName);
   if (!claim) return { ok: true, idle: true, agent: agentName };
 
+  // ✅ Hook-based timeout: each LLM step inside processWorkerTask resets its own timer
+  // withTimeout is applied per-step inside llmText() — no outer wrap needed here
   let { task, filePath } = claim;
   try {
-    task = await withTimeout(
-      processWorkerTask(agentName, task),
-      swarmAgentTimeoutMs,
-      `swarm agent ${agentName}`
-    );
+    task = await processWorkerTask(agentName, task);
     const out = releaseTask(task, filePath, task.status === 'failed' ? 'failed' : 'pending');
     return { ok: true, idle: false, agent: agentName, task: out.task };
   } catch (err) {
@@ -225,6 +464,26 @@ async function runWorkerTurn(agentName) {
 
 function pickFlowFirstAgent(flow) {
   return flow === 'research_build' ? 'scout' : 'designer';
+}
+
+function pickAutoFirstAgent(goal, flow) {
+  const text = String(goal || '').toLowerCase();
+  if (flow === 'research_build') return 'scout';
+  if (/(research|investigate|compare|look up|search|verify|news|find out)/i.test(text)) return 'scout';
+  if (/(bug|fix|error|exception|stack trace|refactor|implement|write code|code change|patch)/i.test(text)) return 'coder';
+  if (/(review|audit|critique|risk check)/i.test(text)) return 'critic';
+  if (/(spec|prd|requirements|design doc|document)/i.test(text)) return 'designer';
+  return 'designer';
+}
+
+function resolveFirstAgent(goal, flow, opts = {}) {
+  const policy = String(opts.firstAgentPolicy || swarmFirstAgentPolicy || 'auto').toLowerCase();
+  const fixed = String(opts.firstAgent || swarmFirstAgent || '').toLowerCase();
+
+  if (WORKER_AGENT_NAMES.includes(policy)) return policy;
+  if (policy === 'fixed' && WORKER_AGENT_NAMES.includes(fixed)) return fixed;
+  if (policy === 'flow') return pickFlowFirstAgent(flow);
+  return pickAutoFirstAgent(goal, flow);
 }
 
 function extractTigerResult(taskId) {
@@ -250,7 +509,7 @@ async function runTaskToTiger(taskId, opts = {}) {
   for (let i = 0; maxTurns == null || i < maxTurns; i += 1) {
     const found = findTask(taskId);
     if (!found) return { ok: false, error: 'Task disappeared' };
-    const { task } = found;
+    const { task, filePath } = found;
     if (task.next_agent === 'tiger') {
       return { ok: true, task, readyForTiger: true };
     }
@@ -259,6 +518,19 @@ async function runTaskToTiger(taskId, opts = {}) {
     }
 
     const agentName = task.next_agent;
+    if (isStageRef(agentName)) {
+      const architectureFile = String(task.metadata && task.metadata.architecture_file ? task.metadata.architecture_file : '').trim();
+      const architecture = loadArchitecture(architectureFile);
+      const stageId = stageIdFromRef(agentName);
+      const stage = getStageById(architecture, stageId);
+      if (!stage) return { ok: false, task, error: `Unknown stage: ${stageId}` };
+      if (onProgress) onProgress({ phase: 'worker_start', agent: stage.id, task });
+      const updated = await runArchitectureStage(task, architecture, stage);
+      saveTaskInPlace(filePath, updated);
+      if (onProgress) onProgress({ phase: 'worker_done', agent: stage.id, task: updated, turn: { ok: true } });
+      continue;
+    }
+
     if (!AGENT_DEFS[agentName]) {
       return { ok: false, task, error: `Unknown next_agent: ${agentName}` };
     }
@@ -278,13 +550,30 @@ async function runTaskToTiger(taskId, opts = {}) {
 
 async function runTigerFlow(goal, opts = {}) {
   ensureSwarmLayout();
-  const flow = opts.flow || 'design';
+  ensureSwarmConfigLayout();
+
+  const requestedStyle = String(opts.taskStyle || process.env.SWARM_TASK_STYLE || 'default.yaml').trim();
+  const taskStyle = loadTaskStyle(requestedStyle);
+  const architectureFile = String(taskStyle.architecture || '').trim();
+  const architecture = loadArchitecture(architectureFile);
+  const stages = Array.isArray(architecture.stages) ? architecture.stages : [];
+  const startStage = String(architecture.start_stage || (stages[0] && stages[0].id) || '').trim();
+  const flow = String(opts.flow || taskStyle.flow || swarmDefaultFlow || 'architecture').toLowerCase();
+  const objectivePrefix = String(taskStyle.objective_prefix || '').trim();
+  const normalizedGoal = objectivePrefix ? `${objectivePrefix} ${String(goal || '').trim()}` : String(goal || '').trim();
+  const firstAgent = startStage ? stageRef(startStage) : resolveFirstAgent(normalizedGoal, flow, opts);
   const task = createTask({
     from: 'tiger',
-    goal,
-    nextAgent: pickFlowFirstAgent(flow),
+    goal: normalizedGoal,
+    nextAgent: firstAgent,
     flow,
-    metadata: opts.metadata || {}
+    metadata: {
+      ...(opts.metadata || {}),
+      first_agent_policy: String(opts.firstAgentPolicy || swarmFirstAgentPolicy || 'auto').toLowerCase(),
+      first_agent: firstAgent,
+      task_style_file: requestedStyle,
+      architecture_file: architectureFile
+    }
   });
 
   if (typeof opts.onProgress === 'function') {
@@ -329,7 +618,7 @@ async function continueTask(taskId, opts = {}) {
   }
 
   if (bucket === 'failed') {
-    const resumeAgent = inferResumeAgent(task);
+    const resumeAgent = isStageRef(task.next_agent) ? task.next_agent : inferResumeAgent(task);
     task.status = 'pending';
     task.next_agent = resumeAgent;
     appendThread(task, 'tiger', `resume requested: continue from ${resumeAgent}`);

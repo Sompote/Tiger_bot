@@ -14,10 +14,12 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.3.0 (Agentic Swarm version)
+## 🆕 What's New — v0.3.1
 
-- **Agentic swarm mode** — Tiger can route Telegram requests through an internal file-based agent swarm (`designer`, `senior_eng`, `spec_writer`, etc.)
-- **Swarm Telegram commands** — added `/swarm on|off`, `/status`, `/task`, `/agents`, `/cancel`, and `/ask <agent> ...`
+- **YAML swarm architecture** — swarm flow is now configurable in `swarm/architecture/*.yaml` with orchestrator, agents, stages, and judgment matrix
+- **YAML task style** — task routing style is configurable in `tasks/styles/*.yaml` and can select which architecture file to use
+- **Telegram architecture editing** — added `/architecture` and `/taskstyle` commands so Telegram users can list/show/write YAML and switch default architecture
+- **Parallel design orchestration default** — default architecture runs 3 designers in parallel, reviewer selects best, revision loop applies, then spec writer finalizes
 
 ### v0.2.5
 
@@ -215,6 +217,12 @@ SWARM_AGENT_TIMEOUT_MS=120000
 
 # Swarm only: on timeout/network/API error, retry via next provider
 SWARM_ROUTE_ON_PROVIDER_ERROR=true
+
+# Swarm task entry policy
+SWARM_DEFAULT_FLOW=auto
+SWARM_FIRST_AGENT_POLICY=auto
+# Used only when SWARM_FIRST_AGENT_POLICY=fixed
+SWARM_FIRST_AGENT=designer
 ```
 
 ### Auto-Switch Behaviour
@@ -246,14 +254,21 @@ SWARM_ROUTE_ON_PROVIDER_ERROR=true
 | `/agents` | Show internal swarm agents and availability |
 | `/cancel <task_id>` | Cancel a swarm task |
 | `/ask <agent> <question>` | Ask a specific internal agent role directly |
+| `/architecture` | List swarm architecture YAML files |
+| `/architecture show <file>` | Show one architecture YAML file |
+| `/architecture use <file>` | Set default task-style architecture file |
+| `/architecture write <file>` + newline + yaml | Save architecture YAML from Telegram |
+| `/taskstyle` | List task-style YAML files |
+| `/taskstyle show <file>` | Show one task-style YAML file |
+| `/taskstyle write <file>` + newline + yaml | Save task-style YAML from Telegram |
 | `/help` | Show all commands |
 
 ### Swarm Settings (`/swarm`)
 
-Tiger v0.3.0 includes an internal agent swarm for Telegram message routing.
+Tiger v0.3.1 includes an internal agent swarm for Telegram message routing.
 
 - **Default:** swarm is **ON** when the Telegram bot starts
-- **`/swarm on`**: regular user messages are routed through the internal swarm flow (e.g. `designer -> senior_eng -> spec_writer`)
+- **`/swarm on`**: regular user messages are routed through the YAML architecture in `swarm/architecture/*.yaml` (selected by `tasks/styles/default.yaml`)
 - **`/swarm off`**: regular user messages skip the swarm and go directly to the standard Tiger agent reply path
 - **Scope:** this toggle affects only **normal chat messages** (not admin commands like `/api`, `/tokens`, `/limit`)
 - **Current persistence:** the `/swarm` toggle is currently **in-memory only** and resets to **ON** after bot restart
@@ -264,6 +279,16 @@ Tiger v0.3.0 includes an internal agent swarm for Telegram message routing.
 - `SWARM_AGENT_TIMEOUT_MS`: timeout per swarm worker step (e.g. one `designer` turn). `0` disables the extra swarm timeout.
 - `SWARM_ROUTE_ON_PROVIDER_ERROR=true|false`: swarm-only provider failover on timeout/network/API errors.
 - Provider timeouts are separate and provider-specific, for example `KIMI_TIMEOUT_MS`, `ZAI_TIMEOUT_MS`, `CLAUDE_TIMEOUT_MS`.
+
+### Swarm Entry Policy (`.env`)
+
+- `SWARM_DEFAULT_FLOW=auto|design|research_build`: default flow for new Telegram swarm tasks.
+- `SWARM_FIRST_AGENT_POLICY` controls who starts first:
+  - `auto` (default): Tiger/orchestrator picks based on the goal text
+  - `flow`: use flow mapping (`research_build -> scout`, otherwise `designer`)
+  - `fixed`: use `SWARM_FIRST_AGENT`
+  - or set a direct agent name (for example `designer`, `scout`, `coder`)
+- `SWARM_FIRST_AGENT` is used when `SWARM_FIRST_AGENT_POLICY=fixed`
 
 Examples:
 
@@ -318,6 +343,125 @@ Example customization ideas:
 - Make `designer` more creative / visual
 - Make `senior_eng` stricter about security, error handling, and scalability
 - Make `spec_writer` produce a specific document format your team uses
+
+### Swarm Architecture YAML (v0.3.1)
+
+Default files:
+
+```text
+swarm/architecture/tiger_parallel_design.yaml
+tasks/styles/default.yaml
+```
+
+Default architecture behavior:
+
+- Orchestrator: `tiger`
+- Stage 1: send task simultaneously to `designer_a`, `designer_b`, `designer_c` (different souls/personalities)
+  - `designer_a`: senior conservative
+  - `designer_b`: balanced, around 40 style
+  - `designer_c`: young aggressive, higher risk appetite
+- Stage 2: `reviewer` evaluates with the judgment matrix and picks best candidate
+- Stage 3: selected designer revises based on reviewer feedback (loop until approved)
+- Stage 4: `spec_writer` writes final output in two sections: **Calculation Report** and **Executive Summary**
+
+Example `swarm/architecture/tiger_parallel_design.yaml`:
+
+```yaml
+version: 1
+name: tiger_parallel_design
+main_orchestrator: tiger
+start_stage: design_parallel
+agents:
+  - id: designer_a
+    runtime_agent: designer_a
+    role: designer
+  - id: designer_b
+    runtime_agent: designer_b
+    role: designer
+  - id: designer_c
+    runtime_agent: designer_c
+    role: designer
+  - id: reviewer
+    runtime_agent: senior_eng
+    role: reviewer
+  - id: spec_writer
+    runtime_agent: spec_writer
+    role: spec_writer
+stages:
+  - id: design_parallel
+    type: parallel
+    roles:
+      - designer_a
+      - designer_b
+      - designer_c
+    store_as: design_candidates
+    next: review_best
+  - id: review_best
+    type: judge
+    role: reviewer
+    candidates_from: design_candidates
+    selected_role_key: selected_role
+    feedback_key: reviewer_feedback
+    calculation_report_key: best_calculation_report
+    pass_next: final_spec
+    fail_next: revise_selected
+  - id: revise_selected
+    type: revise
+    role_from_context: selected_role
+    feedback_from_context: reviewer_feedback
+    candidates_from: design_candidates
+    update_context_keys_from_revised:
+      - best_calculation_report
+    next: review_best
+  - id: final_spec
+    type: final
+    role: spec_writer
+    source_from_context: best_calculation_report
+    output_sections:
+      - Calculation Report
+      - Executive Summary
+    output_notes: Include formulas, assumptions, step-by-step calculations, final values, and concise recommendations.
+    next: tiger_done
+judgment_matrix:
+  criteria:
+    - name: objective_fit
+      weight: 0.35
+      description: How well the design satisfies the objective.
+    - name: feasibility
+      weight: 0.25
+      description: Delivery realism and technical viability.
+    - name: clarity
+      weight: 0.2
+      description: Readability and implementation clarity.
+    - name: risk
+      weight: 0.2
+      description: Risk exposure and mitigation quality.
+  pass_rule: reviewer_approval
+```
+
+### Task Style YAML
+
+Task style is the selector/policy layer for swarm execution.
+
+- `architecture`: which file in `swarm/architecture/` to run
+- `flow`: flow label for task routing mode
+- `objective_prefix`: text prepended to the user objective before processing
+
+Default file:
+
+```text
+tasks/styles/default.yaml
+```
+
+Example:
+
+```yaml
+version: 1
+name: default
+architecture: tiger_parallel_design.yaml
+flow: architecture
+objective_prefix: "Objective:"
+```
 
 ---
 

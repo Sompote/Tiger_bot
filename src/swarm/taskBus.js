@@ -8,7 +8,18 @@ const TASKS_DIR = path.join(ROOT_DIR, 'tasks');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
 
 const TASK_BUCKETS = ['pending', 'in_progress', 'done', 'failed'];
-const DEFAULT_AGENT_DIRS = ['tiger', 'designer', 'senior_eng', 'spec_writer', 'scout', 'coder', 'critic'];
+const DEFAULT_AGENT_DIRS = [
+  'tiger',
+  'designer',
+  'designer_a',
+  'designer_b',
+  'designer_c',
+  'senior_eng',
+  'spec_writer',
+  'scout',
+  'coder',
+  'critic'
+];
 
 function nowIso() {
   return new Date().toISOString();
