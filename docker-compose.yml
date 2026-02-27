@@ -1,0 +1,25 @@
+services:
+  tiger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tiger-agent:local
+    container_name: tiger-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TIGER_HOME=/home/node/.tiger
+    command: ["telegram"]
+    volumes:
+      - tiger_home:/home/node/.tiger
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  tiger_home:

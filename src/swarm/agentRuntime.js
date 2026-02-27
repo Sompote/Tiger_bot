@@ -8,7 +8,9 @@ const {
   swarmRouteOnProviderError,
   swarmDefaultFlow,
   swarmFirstAgentPolicy,
-  swarmFirstAgent
+  swarmFirstAgent,
+  swarmStepMaxRetries,
+  swarmContinueOnError
 } = require('../config');
 const {
   AGENTS_DIR,
@@ -83,6 +85,34 @@ function getTaskContext(task) {
     task.metadata.swarm_ctx = {};
   }
   return task.metadata.swarm_ctx;
+}
+
+function getRetryState(task) {
+  if (!task.metadata || typeof task.metadata !== 'object') task.metadata = {};
+  if (!task.metadata.retry_state || typeof task.metadata.retry_state !== 'object') {
+    task.metadata.retry_state = {};
+  }
+  const state = task.metadata.retry_state;
+  if (!state.workers || typeof state.workers !== 'object') state.workers = {};
+  if (!state.stages || typeof state.stages !== 'object') state.stages = {};
+  return state;
+}
+
+function markRetryAttempt(task, scope, key) {
+  const state = getRetryState(task);
+  const store = scope === 'stage' ? state.stages : state.workers;
+  const k = String(key || '').trim();
+  if (!k) return 1;
+  store[k] = Number(store[k] || 0) + 1;
+  return store[k];
+}
+
+function clearRetryAttempts(task, scope, key) {
+  const state = getRetryState(task);
+  const store = scope === 'stage' ? state.stages : state.workers;
+  const k = String(key || '').trim();
+  if (!k) return;
+  delete store[k];
 }
 
 function resolveRoleMap(architecture) {
@@ -281,7 +311,7 @@ async function runArchitectureStage(task, architecture, stage) {
 
   if (stageType === 'parallel') {
     const roles = Array.isArray(stage.roles) ? stage.roles.map((x) => String(x || '').trim()).filter(Boolean) : [];
-    const outputs = await Promise.all(roles.map(async (roleId) => {
+    const roleRuns = await Promise.allSettled(roles.map(async (roleId) => {
       const role = roleMap[roleId] || { runtimeAgent: roleId };
       const text = await runRoleStep(
         task,
@@ -293,11 +323,37 @@ async function runArchitectureStage(task, architecture, stage) {
       );
       return { role: roleId, runtime_agent: role.runtimeAgent, text };
     }));
+    const outputs = [];
+    const failures = [];
+    for (let i = 0; i < roleRuns.length; i += 1) {
+      const roleId = roles[i];
+      const outcome = roleRuns[i];
+      if (outcome.status === 'fulfilled') {
+        outputs.push(outcome.value);
+      } else {
+        failures.push({
+          role: roleId,
+          error: String(outcome.reason && outcome.reason.message ? outcome.reason.message : outcome.reason || 'unknown error')
+        });
+      }
+    }
+
     for (const out of outputs) {
       appendThread(task, out.role, out.text || `${out.role} completed step`);
     }
+    for (const fail of failures) {
+      appendThread(task, fail.role, `error: ${fail.error}`);
+    }
+
     const key = String(stage.store_as || `${stage.id}_outputs`).trim();
     ctx[key] = outputs;
+    ctx[`${key}_errors`] = failures;
+    const minSuccess = Math.max(1, Number(stage.min_success || 1));
+    if (outputs.length < minSuccess) {
+      throw new Error(
+        `parallel stage "${stage.id}" produced ${outputs.length}/${roles.length} successful outputs (min_success=${minSuccess})`
+      );
+    }
     appendThread(task, 'tiger', `stage ${stage.id} completed with ${outputs.length} parallel outputs`);
     task.next_agent = stage.next ? stageRef(stage.next) : 'tiger';
     task.status = 'pending';
@@ -448,17 +504,49 @@ async function runWorkerTurn(agentName) {
   let { task, filePath } = claim;
   try {
     task = await processWorkerTask(agentName, task);
+    clearRetryAttempts(task, 'worker', agentName);
     const out = releaseTask(task, filePath, task.status === 'failed' ? 'failed' : 'pending');
     return { ok: true, idle: false, agent: agentName, task: out.task };
   } catch (err) {
-    appendThread(task, agentName, `error: ${err.message}`);
+    const errorMsg = String(err && err.message ? err.message : 'unknown error');
+    appendThread(task, agentName, `error: ${errorMsg}`);
+    const attempt = markRetryAttempt(task, 'worker', agentName);
+    const maxRetries = Math.max(0, Number(process.env.SWARM_STEP_MAX_RETRIES || swarmStepMaxRetries || 0));
+
+    if (attempt <= maxRetries) {
+      task.status = 'pending';
+      task.next_agent = agentName;
+      appendThread(task, 'tiger', `retry scheduled for ${agentName} (${attempt}/${maxRetries})`);
+      const out = releaseTask(task, filePath, 'pending');
+      return {
+        ok: true,
+        idle: false,
+        retrying: true,
+        agent: agentName,
+        error: errorMsg,
+        task: out.task
+      };
+    }
+
     if (!task.metadata || typeof task.metadata !== 'object') task.metadata = {};
     task.metadata.last_failed_agent = agentName;
-    task.metadata.last_error = String(err && err.message ? err.message : 'unknown error');
+    task.metadata.last_error = errorMsg;
+
+    if (swarmContinueOnError) {
+      appendThread(task, 'tiger', `continuing after ${agentName} failure (retries exhausted)`);
+      task.status = 'pending';
+      task.next_agent = 'tiger';
+      if (!task.result) {
+        task.result = `Task completed with degraded path: ${agentName} failed after ${attempt - 1} retries. Last error: ${errorMsg}`;
+      }
+      const out = releaseTask(task, filePath, 'pending');
+      return { ok: true, idle: false, degraded: true, agent: agentName, error: errorMsg, task: out.task };
+    }
+
     task.status = 'failed';
     task.next_agent = 'tiger';
     const out = releaseTask(task, filePath, 'failed');
-    return { ok: false, idle: false, agent: agentName, error: err.message, task: out.task };
+    return { ok: false, idle: false, agent: agentName, error: errorMsg, task: out.task };
   }
 }
 
@@ -525,9 +613,58 @@ async function runTaskToTiger(taskId, opts = {}) {
       const stage = getStageById(architecture, stageId);
       if (!stage) return { ok: false, task, error: `Unknown stage: ${stageId}` };
       if (onProgress) onProgress({ phase: 'worker_start', agent: stage.id, task });
-      const updated = await runArchitectureStage(task, architecture, stage);
-      saveTaskInPlace(filePath, updated);
-      if (onProgress) onProgress({ phase: 'worker_done', agent: stage.id, task: updated, turn: { ok: true } });
+      try {
+        const updated = await runArchitectureStage(task, architecture, stage);
+        clearRetryAttempts(updated, 'stage', stageId);
+        saveTaskInPlace(filePath, updated);
+        if (onProgress) onProgress({ phase: 'worker_done', agent: stage.id, task: updated, turn: { ok: true } });
+      } catch (err) {
+        const errorMsg = String(err && err.message ? err.message : 'unknown error');
+        appendThread(task, 'tiger', `stage ${stageId} error: ${errorMsg}`);
+        const attempt = markRetryAttempt(task, 'stage', stageId);
+        const maxRetries = Math.max(0, Number(process.env.SWARM_STEP_MAX_RETRIES || swarmStepMaxRetries || 0));
+
+        if (attempt <= maxRetries) {
+          task.status = 'pending';
+          task.next_agent = stageRef(stageId);
+          appendThread(task, 'tiger', `retry scheduled for stage ${stageId} (${attempt}/${maxRetries})`);
+          saveTaskInPlace(filePath, task);
+          if (onProgress) {
+            onProgress({
+              phase: 'worker_done',
+              agent: stage.id,
+              task,
+              turn: { ok: true, retrying: true, error: errorMsg }
+            });
+          }
+          continue;
+        }
+
+        if (swarmContinueOnError) {
+          const fallbackNext = stage.fail_next || stage.next || 'tiger';
+          task.status = 'pending';
+          task.next_agent = fallbackNext === 'tiger' ? 'tiger' : stageRef(fallbackNext);
+          appendThread(task, 'tiger', `continuing after stage ${stageId} failure (retries exhausted)`);
+          if (!task.result && task.next_agent === 'tiger') {
+            task.result = `Task completed with degraded path: stage ${stageId} failed after ${attempt - 1} retries. Last error: ${errorMsg}`;
+          }
+          saveTaskInPlace(filePath, task);
+          if (onProgress) {
+            onProgress({
+              phase: 'worker_done',
+              agent: stage.id,
+              task,
+              turn: { ok: true, degraded: true, error: errorMsg }
+            });
+          }
+          continue;
+        }
+
+        task.status = 'failed';
+        task.next_agent = 'tiger';
+        saveTaskInPlace(filePath, task);
+        return { ok: false, task, error: errorMsg };
+      }
       continue;
     }
 

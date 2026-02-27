@@ -72,6 +72,44 @@ npm install -g tiger-agent
 
 All config and runtime data is stored in `~/.tiger/` — nothing written to the npm global directory.
 
+## 🐳 Docker (Safer Runtime Isolation)
+
+Run Tiger in a hardened container with:
+- non-root user (`node`)
+- dropped Linux capabilities (`cap_drop: [ALL]`)
+- `no-new-privileges`
+- read-only root filesystem
+- persistent writable volume only for `TIGER_HOME` (`/home/node/.tiger`)
+
+Build image:
+
+```bash
+docker build -t tiger-agent:local .
+```
+
+Run CLI mode:
+
+```bash
+docker run --rm -it \
+  --env-file .env \
+  --read-only \
+  --tmpfs /tmp \
+  --security-opt no-new-privileges:true \
+  --cap-drop ALL \
+  -e TIGER_HOME=/home/node/.tiger \
+  -v tiger_home:/home/node/.tiger \
+  tiger-agent:local start
+```
+
+Run Telegram mode via Compose:
+
+```bash
+docker compose up -d
+docker compose logs -f tiger
+```
+
+Default compose command is `telegram`. Change `command:` in `docker-compose.yml` if you want `start` instead.
+
 ---
 
 ## 🚀 Quick Start
@@ -218,6 +256,10 @@ SWARM_AGENT_TIMEOUT_MS=120000
 # Swarm only: on timeout/network/API error, retry via next provider
 SWARM_ROUTE_ON_PROVIDER_ERROR=true
 
+# Swarm execution resilience
+SWARM_STEP_MAX_RETRIES=2
+SWARM_CONTINUE_ON_ERROR=true
+
 # Swarm task entry policy
 SWARM_DEFAULT_FLOW=auto
 SWARM_FIRST_AGENT_POLICY=auto
@@ -278,6 +320,8 @@ Tiger v0.3.1 includes an internal agent swarm for Telegram message routing.
 
 - `SWARM_AGENT_TIMEOUT_MS`: timeout per swarm worker step (e.g. one `designer` turn). `0` disables the extra swarm timeout.
 - `SWARM_ROUTE_ON_PROVIDER_ERROR=true|false`: swarm-only provider failover on timeout/network/API errors.
+- `SWARM_STEP_MAX_RETRIES`: retries per failed worker/stage before giving up.
+- `SWARM_CONTINUE_ON_ERROR=true|false`: if `true`, swarm continues on degraded path after retries are exhausted (instead of hard failing).
 - Provider timeouts are separate and provider-specific, for example `KIMI_TIMEOUT_MS`, `ZAI_TIMEOUT_MS`, `CLAUDE_TIMEOUT_MS`.
 
 ### Swarm Entry Policy (`.env`)
@@ -364,6 +408,14 @@ Default architecture behavior:
 - Stage 3: selected designer revises based on reviewer feedback (loop until approved)
 - Stage 4: `spec_writer` writes final output in two sections: **Calculation Report** and **Executive Summary**
 
+Resilient execution behavior:
+
+- Parallel stages are fault-tolerant: one failed role does not abort the whole stage.
+- `type: parallel` now supports `min_success` (default `1`) to define how many successful role outputs are required.
+- Failed parallel-role errors are stored in context as `<store_as>_errors`.
+- Worker/stage retries are controlled by `SWARM_STEP_MAX_RETRIES`.
+- If retries are exhausted and `SWARM_CONTINUE_ON_ERROR=true`, swarm continues on a degraded path instead of hard fail.
+
 Example `swarm/architecture/tiger_parallel_design.yaml`:
 
 ```yaml
@@ -394,6 +446,7 @@ stages:
       - designer_a
       - designer_b
       - designer_c
+    min_success: 2
     store_as: design_candidates
     next: review_best
   - id: review_best

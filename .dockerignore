@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.secrets
+tasks
+db
+logs
+*.log
+*.db
+*.sqlite
+.DS_Store
+Thumbs.db

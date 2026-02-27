@@ -104,6 +104,12 @@ const memoryIngestMinChars = Math.max(20, Number(process.env.MEMORY_INGEST_MIN_C
 const swarmAgentTimeoutMs = Math.max(0, Number(process.env.SWARM_AGENT_TIMEOUT_MS || 0));
 const swarmRouteOnProviderError =
   ['1', 'true', 'yes', 'on'].includes(cleanEnvValue(process.env.SWARM_ROUTE_ON_PROVIDER_ERROR || '').toLowerCase());
+const swarmDefaultFlow = cleanEnvValue(process.env.SWARM_DEFAULT_FLOW || 'auto').toLowerCase() || 'auto';
+const swarmFirstAgentPolicy = cleanEnvValue(process.env.SWARM_FIRST_AGENT_POLICY || 'auto').toLowerCase() || 'auto';
+const swarmFirstAgent = cleanEnvValue(process.env.SWARM_FIRST_AGENT || '').toLowerCase();
+const swarmStepMaxRetries = Math.max(0, Number(process.env.SWARM_STEP_MAX_RETRIES || 2));
+const swarmContinueOnError =
+  ['1', 'true', 'yes', 'on'].includes(cleanEnvValue(process.env.SWARM_CONTINUE_ON_ERROR || 'true').toLowerCase());
 
 module.exports = {
   kimiProvider,
@@ -132,6 +138,11 @@ module.exports = {
   memoryIngestMinChars,
   swarmAgentTimeoutMs,
   swarmRouteOnProviderError,
+  swarmDefaultFlow,
+  swarmFirstAgentPolicy,
+  swarmFirstAgent,
+  swarmStepMaxRetries,
+  swarmContinueOnError,
   dbPath: path.resolve(process.env.DB_PATH || './db/agent.json'),
   maxMessages: Number(process.env.MAX_MESSAGES || 200),
   recentMessages: Number(process.env.RECENT_MESSAGES || 40)
