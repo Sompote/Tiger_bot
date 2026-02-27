@@ -53,10 +53,14 @@ async function safeSendTyping(bot, chatId) {
 
 // ─── /api command ─────────────────────────────────────────────────────────────
 
-const KNOWN_PROVIDERS = ['kimi', 'moonshot', 'zai', 'minimax', 'claude'];
+function getKnownProviders() {
+  const ids = tokenManager.getKnownProviders();
+  return ids.length ? ids : tokenManager.getStatus().map((s) => s.id);
+}
 
 function buildApiStatus() {
   const status = tokenManager.getStatus();
+  const knownProviders = getKnownProviders();
   const lines = ['📊 *API Provider Status* (today)'];
   lines.push('');
   for (const s of status) {
@@ -70,7 +74,7 @@ function buildApiStatus() {
   }
   lines.push('');
   lines.push('Use `/api <name>` to switch provider.');
-  lines.push('Names: ' + KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', '));
+  lines.push('Names: ' + knownProviders.map((n) => `\`${n}\``).join(', '));
   return lines.join('\n');
 }
 
@@ -80,8 +84,9 @@ function handleApiCommand(arg) {
   }
 
   const target = arg.trim().toLowerCase();
-  if (!KNOWN_PROVIDERS.includes(target)) {
-    return `❌ Unknown provider: \`${target}\`\nAvailable: ${KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', ')}`;
+  const knownProviders = getKnownProviders();
+  if (!knownProviders.includes(target)) {
+    return `❌ Unknown provider: \`${target}\`\nAvailable: ${knownProviders.map((n) => `\`${n}\``).join(', ')}`;
   }
 
   const provider = getProvider(target);
@@ -109,6 +114,7 @@ function handleApiCommand(arg) {
 // ─── /limit command ───────────────────────────────────────────────────────────
 
 function handleLimitCommand(arg) {
+  const knownProviders = getKnownProviders();
   if (!arg) {
     const status = tokenManager.getStatus();
     const lines = ['⚙️ *Token Limits* (0 = unlimited)', ''];
@@ -120,7 +126,7 @@ function handleLimitCommand(arg) {
     lines.push('');
     lines.push('Use `/limit <provider> <number>` to set a limit.');
     lines.push('Use `/limit <provider> 0` for unlimited.');
-    lines.push('Providers: ' + KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', '));
+    lines.push('Providers: ' + knownProviders.map((n) => `\`${n}\``).join(', '));
     return lines.join('\n');
   }
 
@@ -131,8 +137,8 @@ function handleLimitCommand(arg) {
 
   const [providerArg, valueArg] = parts;
   const id = providerArg.toLowerCase();
-  if (!KNOWN_PROVIDERS.includes(id)) {
-    return `❌ Unknown provider: \`${id}\`\nAvailable: ${KNOWN_PROVIDERS.map((n) => `\`${n}\``).join(', ')}`;
+  if (!knownProviders.includes(id)) {
+    return `❌ Unknown provider: \`${id}\`\nAvailable: ${knownProviders.map((n) => `\`${n}\``).join(', ')}`;
   }
 
   const n = Number(valueArg);
@@ -465,6 +471,7 @@ function startTelegramBot() {
     }
 
     if (text === '/help' || text === '/start') {
+      const knownProviders = getKnownProviders();
       const helpText = [
         '🤖 *Tiger Bot Commands*',
         '',
@@ -492,7 +499,7 @@ function startTelegramBot() {
         '/ask `<agent> <question>` \\- Ask a specific internal agent',
         '/help \\- Show this message',
         '',
-        '*Available providers:* ' + KNOWN_PROVIDERS.join(', ')
+        '*Available providers:* ' + knownProviders.join(', ')
       ].join('\n');
       await safeSend(bot, chatId, helpText, { parse_mode: 'MarkdownV2' });
       return;

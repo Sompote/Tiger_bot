@@ -7,21 +7,18 @@
  * handles auto-switching when a limit or rate-limit is hit.
  *
  * Config (read from .env via config.js on init):
- *   ACTIVE_PROVIDER       – starting provider id (default: kimi)
- *   PROVIDER_ORDER        – comma-separated priority list (default: kimi,zai,minimax,claude,moonshot)
- *   KIMI_TOKEN_LIMIT      – daily token cap for kimi     (0 = unlimited)
- *   MOONSHOT_TOKEN_LIMIT  – daily token cap for moonshot (0 = unlimited)
- *   ZAI_TOKEN_LIMIT       – daily token cap for zai      (0 = unlimited)
- *   MINIMAX_TOKEN_LIMIT   – daily token cap for minimax  (0 = unlimited)
- *   CLAUDE_TOKEN_LIMIT    – daily token cap for claude   (0 = unlimited)
+ *   ACTIVE_PROVIDER        - starting provider id
+ *   PROVIDER_ORDER         - comma-separated priority list
+ *   <PROVIDER>_TOKEN_LIMIT - daily token cap per provider (0 = unlimited)
  */
 
 const fs = require('fs');
 const path = require('path');
+const { getProviders } = require('./apiProviders');
 
 const USAGE_FILE = path.resolve('./db/token_usage.json');
 
-// ─── In-memory state ────────────────────────────────────────────────────────
+// --- In-memory state ---------------------------------------------------------
 
 const state = {
   activeProvider: '',
@@ -32,7 +29,7 @@ const state = {
 
 let _initialized = false;
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// --- Helpers ----------------------------------------------------------------
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
@@ -42,7 +39,36 @@ function cleanEnv(v) {
   return String(v || '').trim().replace(/^['"]|['"]$/g, '');
 }
 
-// ─── Persistence ────────────────────────────────────────────────────────────
+function getAllProviderIds() {
+  return Object.keys(getProviders());
+}
+
+function tokenLimitEnvKey(id) {
+  return `${id.toUpperCase()}_TOKEN_LIMIT`;
+}
+
+function buildProviderOrder(env) {
+  const known = new Set(getAllProviderIds());
+  const orderRaw = cleanEnv(env.PROVIDER_ORDER);
+
+  if (orderRaw) {
+    const parsed = orderRaw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter((id) => id && known.has(id));
+    if (parsed.length) return [...new Set(parsed)];
+  }
+
+  // If no explicit order is set, prefer providers that have a key configured.
+  const withKey = Object.entries(getProviders())
+    .filter(([, provider]) => cleanEnv(provider.apiKey))
+    .map(([id]) => id);
+  if (withKey.length) return withKey;
+
+  return getAllProviderIds();
+}
+
+// --- Persistence -------------------------------------------------------------
 
 function loadUsageFile() {
   try {
@@ -60,7 +86,7 @@ function saveUsageFile() {
   } catch (_) {}
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+// --- Init -------------------------------------------------------------------
 
 function init() {
   if (_initialized) return;
@@ -70,21 +96,19 @@ function init() {
   const today = todayStr();
 
   // Provider order
-  const orderRaw = cleanEnv(env.PROVIDER_ORDER) || 'kimi,zai,minimax,claude,moonshot';
-  state.providerOrder = orderRaw.split(',').map((s) => s.trim()).filter(Boolean);
+  state.providerOrder = buildProviderOrder(env);
 
   // Active provider
-  const active = cleanEnv(env.ACTIVE_PROVIDER) || state.providerOrder[0] || 'kimi';
-  state.activeProvider = active;
+  const activeEnv = cleanEnv(env.ACTIVE_PROVIDER).toLowerCase();
+  state.activeProvider = state.providerOrder.includes(activeEnv)
+    ? activeEnv
+    : (state.providerOrder[0] || '');
 
   // Token limits per provider (0 = unlimited)
-  state.limits = {
-    kimi: Number(env.KIMI_TOKEN_LIMIT || 0),
-    moonshot: Number(env.MOONSHOT_TOKEN_LIMIT || 0),
-    zai: Number(env.ZAI_TOKEN_LIMIT || 0),
-    minimax: Number(env.MINIMAX_TOKEN_LIMIT || 0),
-    claude: Number(env.CLAUDE_TOKEN_LIMIT || 0)
-  };
+  state.limits = {};
+  for (const id of state.providerOrder) {
+    state.limits[id] = Number(env[tokenLimitEnvKey(id)] || 0);
+  }
 
   // Load persisted daily usage; discard stale days
   const persisted = loadUsageFile();
@@ -100,11 +124,16 @@ function ensureInit() {
   if (!_initialized) init();
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// --- Public API --------------------------------------------------------------
 
 function getCurrentProvider() {
   ensureInit();
   return state.activeProvider;
+}
+
+function getKnownProviders() {
+  ensureInit();
+  return [...state.providerOrder];
 }
 
 /**
@@ -113,8 +142,7 @@ function getCurrentProvider() {
  */
 function setLimit(id, limit) {
   ensureInit();
-  const known = ['kimi', 'moonshot', 'zai', 'minimax', 'claude'];
-  if (!known.includes(id)) return { ok: false, error: `Unknown provider: ${id}` };
+  if (!state.providerOrder.includes(id)) return { ok: false, error: `Unknown provider: ${id}` };
   const n = Number(limit);
   if (isNaN(n) || n < 0) return { ok: false, error: 'Limit must be a non-negative number (0 = unlimited)' };
   state.limits[id] = Math.floor(n);
@@ -128,7 +156,7 @@ function setLimit(id, limit) {
  */
 function setProvider(id) {
   ensureInit();
-  if (!state.providerOrder.includes(id) && !['kimi', 'moonshot', 'zai', 'minimax', 'claude'].includes(id)) {
+  if (!state.providerOrder.includes(id)) {
     return { ok: false, error: `Unknown provider: ${id}` };
   }
   const prev = state.activeProvider;
@@ -190,13 +218,12 @@ function autoSwitch(reason) {
 }
 
 /**
- * Full status for all known providers.
+ * Full status for all configured providers.
  */
 function getStatus() {
   ensureInit();
   const today = todayStr();
-  const all = ['kimi', 'moonshot', 'zai', 'minimax', 'claude'];
-  return all.map((id) => {
+  return state.providerOrder.map((id) => {
     const rec = state.usage[id];
     const tokens = rec && rec.date === today ? rec.tokens : 0;
     const requests = rec && rec.date === today ? rec.requests : 0;
@@ -228,6 +255,7 @@ function resetUsage(providerId) {
 module.exports = {
   init,
   getCurrentProvider,
+  getKnownProviders,
   setProvider,
   setLimit,
   recordTokens,

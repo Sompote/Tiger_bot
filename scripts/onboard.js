@@ -14,6 +14,7 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const { execSync, execFileSync } = require('child_process');
+const { getProviders } = require('../src/apiProviders');
 
 const TIGER_HOME = process.env.TIGER_HOME || path.join(os.homedir(), '.tiger');
 const PKG_ROOT = path.resolve(__dirname, '..');
@@ -60,7 +61,15 @@ function envLine(k, v) {
   return `${k}=${s}`;
 }
 
-const KNOWN_PROVIDERS = ['minimax', 'zai', 'claude', 'kimi', 'moonshot'];
+function getKnownProviders() {
+  const discovered = Object.keys(getProviders());
+  const preferred = String(process.env.PROVIDER_ORDER || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const ordered = [...new Set([...preferred, ...discovered])];
+  return ordered.length ? ordered : discovered;
+}
 
 function parseProviderList(input, fallback = []) {
   const raw = String(input || '').trim();
@@ -69,7 +78,8 @@ function parseProviderList(input, fallback = []) {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
   const unique = [...new Set(values)];
-  const invalid = unique.filter((p) => !KNOWN_PROVIDERS.includes(p));
+  const known = getKnownProviders();
+  const invalid = unique.filter((p) => !known.includes(p));
   return { providers: unique, invalid };
 }
 
@@ -194,22 +204,21 @@ Config will be saved to: ${TIGER_HOME}
   }
 
   // ── Provider selection / routing ──────────────────────────────────────────
-  console.log('\nAvailable providers: minimax, zai (Zhipu GLM-4.7), claude, kimi, moonshot');
-  console.log('Choose only providers you want to configure. Others will be omitted from .env.');
-
+  const knownProviders = getKnownProviders();
+  console.log('\nSelect providers to configure:');
   let selectedProviders = [];
   while (!selectedProviders.length) {
-    const picked = await ask('Providers to configure (comma-separated, default: minimax): ');
-    const parsed = parseProviderList(picked, ['minimax']);
-    if (parsed.invalid.length) {
-      console.log(`Invalid provider(s): ${parsed.invalid.join(', ')}. Try again.`);
-      continue;
+    selectedProviders = [];
+    const defaultProvider = knownProviders.includes('minimax') ? 'minimax' : knownProviders[0];
+    for (const provider of knownProviders) {
+      const checked = provider === defaultProvider;
+      const mark = checked ? 'x' : ' ';
+      const answer = await ask(`  [${mark}] Enable ${provider}? (${checked ? 'Y/n' : 'y/N'}): `);
+      if (yn(answer, checked)) selectedProviders.push(provider);
     }
-    if (!parsed.providers.length) {
+    if (!selectedProviders.length) {
       console.log('Pick at least one provider.');
-      continue;
     }
-    selectedProviders = parsed.providers;
   }
 
   const activeDefault = selectedProviders[0];

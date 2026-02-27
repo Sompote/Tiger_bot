@@ -14,7 +14,7 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ---
 
-## 🆕 What's New — v0.3.1
+## 🆕 What's New — v0.3.4
 
 - **YAML swarm architecture** — swarm flow is now configurable in `swarm/architecture/*.yaml` with orchestrator, agents, stages, and judgment matrix
 - **YAML task style** — task routing style is configurable in `tasks/styles/*.yaml` and can select which architecture file to use
@@ -56,7 +56,7 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 
 ## 📊 Dimension Comparison
 
-| Dimension | Tiger v0.3.1 🐯 | OpenClaw 🔧 | NanoClaw 🪐 |
+| Dimension | Tiger v0.3.4 🐯 | OpenClaw 🔧 | NanoClaw 🪐 |
 |---|---|---|---|
 | Language | JS + Python | TypeScript | TypeScript |
 | Platform | Linux + Docker | macOS/Linux/Win | macOS/Linux/Win |
@@ -364,7 +364,7 @@ SWARM_FIRST_AGENT=designer
 
 ### Swarm Settings (`/swarm`)
 
-Tiger v0.3.1 includes an internal agent swarm for Telegram message routing.
+Tiger v0.3.4 includes an internal agent swarm for Telegram message routing.
 
 - **Default:** swarm is **OFF** when the Telegram bot starts (`SWARM_ENABLED=false`)
 - **`/swarm on`**: regular user messages are routed through the YAML architecture in `swarm/architecture/*.yaml` (selected by `tasks/styles/default.yaml`)
@@ -446,7 +446,7 @@ Example customization ideas:
 - Make `senior_eng` stricter about security, error handling, and scalability
 - Make `spec_writer` produce a specific document format your team uses
 
-### Swarm Architecture YAML (v0.3.1)
+### Swarm Architecture YAML (v0.3.4)
 
 Default files:
 
