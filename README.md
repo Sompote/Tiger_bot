@@ -140,10 +140,16 @@ Default compose command is `telegram`. Change `command:` in `docker-compose.yml`
 
 ## 🚀 Quick Start
 
-### 1. Run the setup wizard
+### 1. Run the setup wizard (`npm`, not `npn`)
 
 ```bash
 tiger onboard
+```
+
+If you cloned this repo and run locally (without global install), use:
+
+```bash
+npm run onboard
 ```
 
 The wizard will ask for:
@@ -161,20 +167,29 @@ Config is saved to `~/.tiger/.env` (mode 600).
 **CLI chat:**
 ```bash
 tiger start
+# local repo
+npm run start
 ```
 Exit with `/exit` or `/quit`.
 
 **Telegram bot (foreground):**
 ```bash
 tiger telegram
+# local repo
+npm run telegram
 ```
+Use foreground mode only for testing/log watching in the current terminal session.
 
 **Telegram bot (background daemon):**
 ```bash
 tiger telegram --background   # start
 tiger status                  # check if running
 tiger stop                    # stop
+# local repo
+npm run telegram:bg           # start
+npm run telegram:stop         # stop
 ```
+Recommended for daily use: run background mode so Tiger keeps running after you close the terminal.
 
 **Restart background bot (after editing `.env` in this repo):**
 ```bash
