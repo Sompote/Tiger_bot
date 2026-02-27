@@ -16,6 +16,7 @@ const srcRoot = path.resolve(__dirname, '..');
 // Runtime root — inside TIGER_HOME when installed globally, otherwise project root
 const rootDir = process.env.TIGER_HOME || process.cwd();
 const supervisorPidPath = path.resolve(rootDir, 'tiger-telegram.pid');
+const workerHeartbeatPath = path.resolve(rootDir, 'tiger-telegram-worker.heartbeat');
 
 process.on('unhandledRejection', (reason) => {
   const msg = reason && reason.stack ? reason.stack : String(reason);
@@ -32,6 +33,14 @@ function isTelegramMode(argv) {
 
 function hasFlag(argv, flag) {
   return argv.includes(flag);
+}
+
+function writeWorkerHeartbeat() {
+  try {
+    fs.writeFileSync(workerHeartbeatPath, `${Date.now()}\n`, 'utf8');
+  } catch (err) {
+    // Heartbeat is best-effort and must not crash the worker.
+  }
 }
 
 function isPidRunning(pid) {
@@ -87,7 +96,9 @@ function stopTelegramBackground() {
   process.kill(pid, 'SIGTERM');
   fs.unlinkSync(supervisorPidPath);
   const workerPidPath = path.resolve(rootDir, 'tiger-telegram-worker.pid');
+  const workerHeartbeatPath = path.resolve(rootDir, 'tiger-telegram-worker.heartbeat');
   if (fs.existsSync(workerPidPath)) fs.unlinkSync(workerPidPath);
+  if (fs.existsSync(workerHeartbeatPath)) fs.unlinkSync(workerHeartbeatPath);
   process.stdout.write(`Stopped Telegram background bot (supervisor PID ${pid}).\n`);
 }
 
@@ -162,6 +173,7 @@ async function runCli() {
 
 async function main() {
   const argv = process.argv.slice(2);
+  const isWorkerProcess = hasFlag(argv, '--worker');
   if (hasFlag(argv, '--telegram-stop')) {
     stopTelegramBackground();
     return;
@@ -178,6 +190,11 @@ async function main() {
     startReflectionScheduler();
     const vectorStatus = initVectorMemory();
     printVectorMemoryStatus(vectorStatus);
+    if (isWorkerProcess) {
+      // NanoClaw-style heartbeat: worker emits liveness every minute.
+      writeWorkerHeartbeat();
+      setInterval(writeWorkerHeartbeat, 60 * 1000);
+    }
     startTelegramBot();
     process.stdout.write('Telegram bot started.\n');
     return;

@@ -172,6 +172,11 @@ Logs: `~/.tiger/logs/telegram.out.log`
 | **Status** | `tiger status` | Check daemon status |
 | **Onboard** | `tiger onboard` | Re-run setup wizard |
 
+Background crash detection:
+- Telegram worker now emits a heartbeat every 60 seconds.
+- Supervisor watchdog checks heartbeat every minute.
+- If heartbeat is stale for 5 minutes, supervisor force-restarts the worker.
+
 ---
 
 ## 🔧 Setup Wizard Details
