@@ -162,6 +162,17 @@ The wizard will ask for:
 
 Config is saved to `~/.tiger/.env` (mode 600).
 
+**MiniMax starter (quick setup):**
+```bash
+# during onboard: choose active provider = minimax
+tiger onboard
+# local repo alternative
+# npm run onboard
+```
+Set at least:
+- `ACTIVE_PROVIDER=minimax`
+- `MINIMAX_API_KEY=...`
+
 ### 2. Start
 
 **CLI chat:**
@@ -270,7 +281,7 @@ Tiger supports **5 providers** with automatic fallback and daily token limits.
 | Kimi Code | `kimi` | `k2p5` | `KIMI_CODE_API_KEY` |
 | Kimi Moonshot | `moonshot` | `kimi-k1` | `MOONSHOT_API_KEY` |
 | Z.ai (Zhipu) | `zai` | `glm-4.7` | `ZAI_API_KEY` (format: `id.secret`) |
-| MiniMax | `minimax` | `abab6.5s-chat` | `MINIMAX_API_KEY` |
+| MiniMax | `minimax` | `MiniMax-M2.5` | `MINIMAX_API_KEY` |
 | Claude (Anthropic) | `claude` | `claude-sonnet-4-6` | `CLAUDE_API_KEY` |
 
 ### `.env` Example
@@ -355,16 +366,17 @@ SWARM_FIRST_AGENT=designer
 
 Tiger v0.3.1 includes an internal agent swarm for Telegram message routing.
 
-- **Default:** swarm is **ON** when the Telegram bot starts
+- **Default:** swarm is **OFF** when the Telegram bot starts (`SWARM_ENABLED=false`)
 - **`/swarm on`**: regular user messages are routed through the YAML architecture in `swarm/architecture/*.yaml` (selected by `tasks/styles/default.yaml`)
 - **`/swarm off`**: regular user messages skip the swarm and go directly to the standard Tiger agent reply path
 - **Scope:** this toggle affects only **normal chat messages** (not admin commands like `/api`, `/tokens`, `/limit`)
-- **Current persistence:** the `/swarm` toggle is currently **in-memory only** and resets to **ON** after bot restart
+- **Current persistence:** the `/swarm` toggle is currently **in-memory only** and resets to `SWARM_ENABLED` value after bot restart
 - **Task resume:** use `/task continue <task_id>` (or `/task retry <task_id>`) to continue a failed timeout/API-error task without starting over
 
 ### Swarm Timeout / Failover (`.env`)
 
 - `SWARM_AGENT_TIMEOUT_MS`: timeout per swarm worker step (e.g. one `designer` turn). `0` disables the extra swarm timeout.
+- `SWARM_ENABLED=true|false`: default `/swarm` state at bot startup.
 - `SWARM_ROUTE_ON_PROVIDER_ERROR=true|false`: swarm-only provider failover on timeout/network/API errors.
 - `SWARM_STEP_MAX_RETRIES`: retries per failed worker/stage before giving up.
 - `SWARM_CONTINUE_ON_ERROR=true|false`: if `true`, swarm continues on degraded path after retries are exhausted (instead of hard failing).

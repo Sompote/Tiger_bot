@@ -110,6 +110,8 @@ const swarmFirstAgent = cleanEnvValue(process.env.SWARM_FIRST_AGENT || '').toLow
 const swarmStepMaxRetries = Math.max(0, Number(process.env.SWARM_STEP_MAX_RETRIES || 2));
 const swarmContinueOnError =
   ['1', 'true', 'yes', 'on'].includes(cleanEnvValue(process.env.SWARM_CONTINUE_ON_ERROR || 'true').toLowerCase());
+const swarmEnabled =
+  ['1', 'true', 'yes', 'on'].includes(cleanEnvValue(process.env.SWARM_ENABLED || 'false').toLowerCase());
 
 module.exports = {
   kimiProvider,
@@ -143,6 +145,7 @@ module.exports = {
   swarmFirstAgent,
   swarmStepMaxRetries,
   swarmContinueOnError,
+  swarmEnabled,
   dbPath: path.resolve(process.env.DB_PATH || './db/agent.json'),
   maxMessages: Number(process.env.MAX_MESSAGES || 200),
   recentMessages: Number(process.env.RECENT_MESSAGES || 40)

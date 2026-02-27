@@ -1,7 +1,7 @@
 'use strict';
 
 const TelegramBot = require('node-telegram-bot-api');
-const { telegramBotToken } = require('../config');
+const { telegramBotToken, swarmEnabled } = require('../config');
 const { handleMessage } = require('../agent/mainAgent');
 const tokenManager = require('../tokenManager');
 const { getProvider } = require('../apiProviders');
@@ -170,7 +170,7 @@ function startTelegramBot() {
   ensureSwarmLayout();
   ensureSwarmConfigLayout();
   const bot = new TelegramBot(telegramBotToken, { polling: true });
-  let swarmEnabled = true;
+  let swarmRoutingEnabled = swarmEnabled;
 
   // Register commands so Telegram shows the list when user types /
   bot.setMyCommands([
@@ -228,16 +228,16 @@ function startTelegramBot() {
     if (text.startsWith('/swarm')) {
       const arg = text.slice(6).trim().toLowerCase();
       if (!arg) {
-        await safeSend(bot, chatId, `🐯 Swarm is currently *${swarmEnabled ? 'ON' : 'OFF'}*.\nUse \`/swarm on\` or \`/swarm off\`.`, MD);
+        await safeSend(bot, chatId, `🐯 Swarm is currently *${swarmRoutingEnabled ? 'ON' : 'OFF'}*.\nUse \`/swarm on\` or \`/swarm off\`.`, MD);
         return;
       }
       if (arg === 'on') {
-        swarmEnabled = true;
+        swarmRoutingEnabled = true;
         await safeSend(bot, chatId, '✅ Swarm routing is now *ON*', MD);
         return;
       }
       if (arg === 'off') {
-        swarmEnabled = false;
+        swarmRoutingEnabled = false;
         await safeSend(bot, chatId, '✅ Swarm routing is now *OFF*\\.\nNew messages will go to the regular Tiger agent\\.', { parse_mode: 'MarkdownV2' });
         return;
       }
@@ -509,7 +509,7 @@ function startTelegramBot() {
     try {
       await safeSendTyping(bot, chatId);
       typingTimer = setInterval(() => safeSendTyping(bot, chatId), 4500);
-      if (!swarmEnabled) {
+      if (!swarmRoutingEnabled) {
         const reply = await handleMessage({ platform: 'telegram', userId, text });
         clearInterval(typingTimer);
         await safeSend(bot, chatId, reply);

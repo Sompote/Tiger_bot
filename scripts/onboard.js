@@ -60,6 +60,19 @@ function envLine(k, v) {
   return `${k}=${s}`;
 }
 
+const KNOWN_PROVIDERS = ['minimax', 'zai', 'claude', 'kimi', 'moonshot'];
+
+function parseProviderList(input, fallback = []) {
+  const raw = String(input || '').trim();
+  const values = (raw ? raw : fallback.join(','))
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const unique = [...new Set(values)];
+  const invalid = unique.filter((p) => !KNOWN_PROVIDERS.includes(p));
+  return { providers: unique, invalid };
+}
+
 // ─── Daemon helpers ───────────────────────────────────────────────────────────
 
 function nodeBin() {
@@ -180,32 +193,87 @@ Config will be saved to: ${TIGER_HOME}
     if (!yn(ow, false)) { console.log('Cancelled.'); rl.close(); return; }
   }
 
-  // ── Active provider ────────────────────────────────────────────────────────
-  console.log('\nAvailable providers: kimi, zai (Zhipu GLM-4.7), minimax, claude, moonshot');
-  const activeProv = (await ask('Active provider (zai): ')).trim() || 'zai';
-  const provOrder = (await ask(`Provider fallback order (${activeProv},claude,kimi,minimax,moonshot): `)).trim()
-    || `${activeProv},claude,kimi,minimax,moonshot`;
+  // ── Provider selection / routing ──────────────────────────────────────────
+  console.log('\nAvailable providers: minimax, zai (Zhipu GLM-4.7), claude, kimi, moonshot');
+  console.log('Choose only providers you want to configure. Others will be omitted from .env.');
+
+  let selectedProviders = [];
+  while (!selectedProviders.length) {
+    const picked = await ask('Providers to configure (comma-separated, default: minimax): ');
+    const parsed = parseProviderList(picked, ['minimax']);
+    if (parsed.invalid.length) {
+      console.log(`Invalid provider(s): ${parsed.invalid.join(', ')}. Try again.`);
+      continue;
+    }
+    if (!parsed.providers.length) {
+      console.log('Pick at least one provider.');
+      continue;
+    }
+    selectedProviders = parsed.providers;
+  }
+
+  const activeDefault = selectedProviders[0];
+  let activeProv = '';
+  while (!activeProv) {
+    const candidate = (await ask(`Active provider (${activeDefault}): `)).trim().toLowerCase() || activeDefault;
+    if (!selectedProviders.includes(candidate)) {
+      console.log(`Active provider must be one of: ${selectedProviders.join(', ')}`);
+      continue;
+    }
+    activeProv = candidate;
+  }
+
+  const orderDefault = [activeProv, ...selectedProviders.filter((p) => p !== activeProv)].join(',');
+  let provOrder = '';
+  while (!provOrder) {
+    const input = await ask(`Provider fallback order (${orderDefault}): `);
+    const parsed = parseProviderList(input, [activeProv, ...selectedProviders.filter((p) => p !== activeProv)]);
+    if (parsed.invalid.length) {
+      console.log(`Invalid provider(s): ${parsed.invalid.join(', ')}. Try again.`);
+      continue;
+    }
+    const outsideSelection = parsed.providers.filter((p) => !selectedProviders.includes(p));
+    if (outsideSelection.length) {
+      console.log(`Order can only include selected providers: ${selectedProviders.join(', ')}`);
+      continue;
+    }
+    if (!parsed.providers.includes(activeProv)) {
+      console.log(`Order must include active provider: ${activeProv}`);
+      continue;
+    }
+    provOrder = parsed.providers.join(',');
+  }
 
   // ── API keys ───────────────────────────────────────────────────────────────
-  console.log('\nEnter API keys (press Enter to skip a provider):');
-
-  const kimiKey    = (await askHidden('  KIMI_CODE_API_KEY  : ')).trim();
-  const moonshotKey= (await askHidden('  MOONSHOT_API_KEY   : ')).trim();
-  const zaiKey     = (await askHidden('  ZAI_API_KEY        : ')).trim();
-  const minimaxKey = (await askHidden('  MINIMAX_API_KEY    : ')).trim();
-  const claudeKey  = (await askHidden('  CLAUDE_API_KEY     : ')).trim();
+  console.log('\nEnter API keys for selected providers:');
+  const kimiKey = selectedProviders.includes('kimi') ? (await askHidden('  KIMI_CODE_API_KEY  : ')).trim() : '';
+  const moonshotKey = selectedProviders.includes('moonshot') ? (await askHidden('  MOONSHOT_API_KEY   : ')).trim() : '';
+  const zaiKey = selectedProviders.includes('zai') ? (await askHidden('  ZAI_API_KEY        : ')).trim() : '';
+  const minimaxKey = selectedProviders.includes('minimax') ? (await askHidden('  MINIMAX_API_KEY    : ')).trim() : '';
+  const claudeKey = selectedProviders.includes('claude') ? (await askHidden('  CLAUDE_API_KEY     : ')).trim() : '';
 
   // ── Telegram ───────────────────────────────────────────────────────────────
   console.log('');
   const tgToken = (await askHidden('  TELEGRAM_BOT_TOKEN : ')).trim();
 
   // ── Token limits ───────────────────────────────────────────────────────────
-  console.log('\nDaily token limits per provider (0 = unlimited, auto-switch on breach):');
-  const kimiLimit    = (await ask('  KIMI_TOKEN_LIMIT    (100000): ')).trim() || '100000';
-  const moonshotLimit= (await ask('  MOONSHOT_TOKEN_LIMIT(100000): ')).trim() || '100000';
-  const zaiLimit     = (await ask('  ZAI_TOKEN_LIMIT     (100000): ')).trim() || '100000';
-  const minimaxLimit = (await ask('  MINIMAX_TOKEN_LIMIT (100000): ')).trim() || '100000';
-  const claudeLimit  = (await ask('  CLAUDE_TOKEN_LIMIT  (500000): ')).trim() || '500000';
+  const tokenLimits = {};
+  console.log('\nDaily token limits for selected providers (0 = unlimited, auto-switch on breach):');
+  if (selectedProviders.includes('kimi')) {
+    tokenLimits.kimi = (await ask('  KIMI_TOKEN_LIMIT    (100000): ')).trim() || '100000';
+  }
+  if (selectedProviders.includes('moonshot')) {
+    tokenLimits.moonshot = (await ask('  MOONSHOT_TOKEN_LIMIT(100000): ')).trim() || '100000';
+  }
+  if (selectedProviders.includes('zai')) {
+    tokenLimits.zai = (await ask('  ZAI_TOKEN_LIMIT     (100000): ')).trim() || '100000';
+  }
+  if (selectedProviders.includes('minimax')) {
+    tokenLimits.minimax = (await ask('  MINIMAX_TOKEN_LIMIT (100000): ')).trim() || '100000';
+  }
+  if (selectedProviders.includes('claude')) {
+    tokenLimits.claude = (await ask('  CLAUDE_TOKEN_LIMIT  (500000): ')).trim() || '500000';
+  }
 
   // ── Misc ───────────────────────────────────────────────────────────────────
   const allowShell = yn(await ask('\nEnable shell tool? (y/N): '), false);
@@ -215,51 +283,80 @@ Config will be saved to: ${TIGER_HOME}
   const lines = [
     '# Tiger Agent config — generated by `tiger onboard`',
     '',
-    '# ── Legacy Kimi compat (used if ACTIVE_PROVIDER=kimi)',
-    envLine('KIMI_PROVIDER', 'code'),
-    envLine('KIMI_CODE_API_KEY', kimiKey),
-    envLine('KIMI_BASE_URL', 'https://api.kimi.com/coding/v1'),
-    envLine('KIMI_CHAT_MODEL', 'kimi-coding/k2p5'),
-    envLine('KIMI_EMBED_MODEL', ''),
-    envLine('KIMI_USER_AGENT', 'KimiCLI/0.77'),
-    envLine('KIMI_ENABLE_EMBEDDINGS', 'false'),
-    envLine('KIMI_TIMEOUT_MS', '30000'),
-    '',
     '# ── Multi-provider',
     envLine('ACTIVE_PROVIDER', activeProv),
     envLine('PROVIDER_ORDER', provOrder),
-    '',
-    '# ── Z.ai (Zhipu GLM)',
-    envLine('ZAI_API_KEY', zaiKey),
-    envLine('ZAI_BASE_URL', 'https://api.z.ai/api/coding/paas/v4'),
-    envLine('ZAI_MODEL', 'glm-4.7'),
-    envLine('ZAI_TIMEOUT_MS', '30000'),
-    '',
-    '# ── MiniMax',
-    envLine('MINIMAX_API_KEY', minimaxKey),
-    envLine('MINIMAX_BASE_URL', 'https://api.minimax.chat/v1'),
-    envLine('MINIMAX_MODEL', 'abab6.5s-chat'),
-    envLine('MINIMAX_TIMEOUT_MS', '30000'),
-    '',
-    '# ── Claude (Anthropic)',
-    envLine('CLAUDE_API_KEY', claudeKey),
-    envLine('CLAUDE_MODEL', 'claude-sonnet-4-6'),
-    envLine('CLAUDE_TIMEOUT_MS', '60000'),
-    '',
-    '# ── Moonshot',
-    envLine('MOONSHOT_API_KEY', moonshotKey),
-    envLine('MOONSHOT_BASE_URL', 'https://api.moonshot.cn/v1'),
-    envLine('MOONSHOT_MODEL', 'kimi-k1'),
-    '',
-    '# ── Token limits (daily, 0 = unlimited)',
-    envLine('KIMI_TOKEN_LIMIT', kimiLimit),
-    envLine('MOONSHOT_TOKEN_LIMIT', moonshotLimit),
-    envLine('ZAI_TOKEN_LIMIT', zaiLimit),
-    envLine('MINIMAX_TOKEN_LIMIT', minimaxLimit),
-    envLine('CLAUDE_TOKEN_LIMIT', claudeLimit),
+    ''
+  ];
+
+  if (selectedProviders.includes('kimi')) {
+    lines.push(
+      '# ── Legacy Kimi compat (used if ACTIVE_PROVIDER=kimi)',
+      envLine('KIMI_PROVIDER', 'code'),
+      envLine('KIMI_CODE_API_KEY', kimiKey),
+      envLine('KIMI_BASE_URL', 'https://api.kimi.com/coding/v1'),
+      envLine('KIMI_CHAT_MODEL', 'kimi-coding/k2p5'),
+      envLine('KIMI_EMBED_MODEL', ''),
+      envLine('KIMI_USER_AGENT', 'KimiCLI/0.77'),
+      envLine('KIMI_ENABLE_EMBEDDINGS', 'false'),
+      envLine('KIMI_TIMEOUT_MS', '30000'),
+      ''
+    );
+  }
+
+  if (selectedProviders.includes('zai')) {
+    lines.push(
+      '# ── Z.ai (Zhipu GLM)',
+      envLine('ZAI_API_KEY', zaiKey),
+      envLine('ZAI_BASE_URL', 'https://api.z.ai/api/coding/paas/v4'),
+      envLine('ZAI_MODEL', 'glm-4.7'),
+      envLine('ZAI_TIMEOUT_MS', '30000'),
+      ''
+    );
+  }
+
+  if (selectedProviders.includes('minimax')) {
+    lines.push(
+      '# ── MiniMax (Coding / OpenAI-compatible)',
+      envLine('MINIMAX_API_KEY', minimaxKey),
+      envLine('MINIMAX_BASE_URL', 'https://api.minimax.io/v1'),
+      envLine('MINIMAX_MODEL', 'MiniMax-M2.5'),
+      envLine('MINIMAX_TIMEOUT_MS', '30000'),
+      ''
+    );
+  }
+
+  if (selectedProviders.includes('claude')) {
+    lines.push(
+      '# ── Claude (Anthropic)',
+      envLine('CLAUDE_API_KEY', claudeKey),
+      envLine('CLAUDE_MODEL', 'claude-sonnet-4-6'),
+      envLine('CLAUDE_TIMEOUT_MS', '60000'),
+      ''
+    );
+  }
+
+  if (selectedProviders.includes('moonshot')) {
+    lines.push(
+      '# ── Moonshot',
+      envLine('MOONSHOT_API_KEY', moonshotKey),
+      envLine('MOONSHOT_BASE_URL', 'https://api.moonshot.cn/v1'),
+      envLine('MOONSHOT_MODEL', 'kimi-k1'),
+      ''
+    );
+  }
+
+  lines.push('# ── Token limits (daily, 0 = unlimited)');
+  if (tokenLimits.kimi != null) lines.push(envLine('KIMI_TOKEN_LIMIT', tokenLimits.kimi));
+  if (tokenLimits.moonshot != null) lines.push(envLine('MOONSHOT_TOKEN_LIMIT', tokenLimits.moonshot));
+  if (tokenLimits.zai != null) lines.push(envLine('ZAI_TOKEN_LIMIT', tokenLimits.zai));
+  if (tokenLimits.minimax != null) lines.push(envLine('MINIMAX_TOKEN_LIMIT', tokenLimits.minimax));
+  if (tokenLimits.claude != null) lines.push(envLine('CLAUDE_TOKEN_LIMIT', tokenLimits.claude));
+  lines.push(
     '',
     '# ── Telegram',
     envLine('TELEGRAM_BOT_TOKEN', tgToken),
+    envLine('SWARM_ENABLED', 'false'),
     '',
     '# ── Permissions',
     envLine('ALLOW_SHELL', allowShell ? 'true' : 'false'),
@@ -280,7 +377,7 @@ Config will be saved to: ${TIGER_HOME}
     'MEMORY_INGEST_EVERY_TURNS=2',
     'MEMORY_INGEST_MIN_CHARS=140',
     ''
-  ];
+  );
 
   fs.writeFileSync(ENV_PATH, lines.join('\n'), { mode: 0o600 });
   console.log(`\n✅  Config written to ${ENV_PATH}`);
@@ -307,7 +404,7 @@ Setup complete! 🐯
 Start CLI:           tiger start
 Start Telegram:      tiger telegram
 Background daemon:   tiger telegram --background
-Switch provider:     /api claude   (in Telegram chat)
+Switch provider:     /api <provider_id>   (in Telegram chat)
 Token usage:         /tokens       (in Telegram chat)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
