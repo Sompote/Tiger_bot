@@ -54,6 +54,32 @@ Made by **AI Research Group, Department of Civil Engineering, KMUTT**
 | **Channels** | CLI + Telegram simultaneously | Single channel only |
 | **Execution** | Chains multiple skills autonomously | Single command only |
 
+## 📊 Dimension Comparison
+
+| Dimension | Tiger v0.3.1 🐯 | OpenClaw 🔧 | NanoClaw 🪐 |
+|---|---|---|---|
+| Language | JS + Python | TypeScript | TypeScript |
+| Platform | Linux + Docker | macOS/Linux/Win | macOS/Linux/Win |
+| Install | `npm install -g tiger-agent` | `npm install -g openclaw` | `git clone` + Claude Code |
+| LLM Providers | 5 (Kimi, Z.ai, MiniMax, Claude, Moonshot) | OpenAI + Claude | Claude only |
+| Multi-provider Failover | ✅ Auto on 429/403 | ✅ | ❌ |
+| Token Budgeting | ✅ Per-provider daily limits | ❌ | ❌ |
+| Predefined Agents | ✅ Role-based, customizable via Markdown files | ✅ Built-in typed agents | ❌ User-defined only |
+| Swarm Architecture | ✅ YAML configurable | ❌ | ❌ |
+| Parallel Execution | ✅ Fault-tolerant `min_success` threshold | ✅ | ✅ |
+| Judgment Matrix | ✅ Weighted criteria + review-revise loop | ❌ | ❌ |
+| Task Resume | ✅ `/task continue <id>` | ❌ | ❌ |
+| Crash Detection | ✅ 60s heartbeat; 5-min stale -> restart worker | ❌ | ✅ 5-min -> reclaim tasks |
+| Container Isolation | ✅ Docker hardened (`cap_drop: ALL`, read-only FS) | Optional Docker | ✅ Docker default |
+| Memory Persistence | ✅ Cross-session SQLite + 30-day backup | Session only | Team lifetime only |
+| Self-learning | ✅ 12h reflection + 24h regeneration | ❌ | ❌ |
+| Vector Retrieval | ✅ sqlite-vec / cosine fallback | ❌ | ❌ |
+| Audit Logging | ✅ | ❌ | ❌ |
+| Voice / Browser | ❌ / ❌ | ✅ / ✅ | ❌ / ❌ |
+| Channel Coverage | Telegram, WhatsApp, CLI | All + iMessage + Teams | Most major |
+| Core Strength | Cost control + YAML swarm + self-learning | Channel breadth + voice + sync A2A | Security + formal swarm lifecycle |
+| Core Weakness | Linux-primary; no cross-task DAG | High complexity; app-layer security | Single-provider lock-in |
+
 ---
 
 ## 📋 Requirements
