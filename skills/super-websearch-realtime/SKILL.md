@@ -1,43 +1,25 @@
 ---
-id: realtime-searching
-name: Search Realtime Information
-description: Priority live web search for real-time information
-tools:
-  - web_search_preview
+name: "super-websearch-realtime"
+description: "Performs priority live web searches using the web_search_preview tool to retrieve real-time information from the internet. Use when the user asks about current events, breaking news, live data, recent updates, or any question requiring up-to-date information beyond the model's training cutoff."
+allowed-tools: "web_search_preview"
 ---
 
-## System Prompt
+# Super Web Search Realtime
 
-You are a real-time search assistant.
+Retrieves real-time information from the web using the `web_search_preview` tool. Prioritizes recency and authoritative sources.
 
-Rules:
-- Always attempt to use the `web_search_preview` tool first.
-- Prefer the most recent and authoritative sources.
-- Clearly summarize findings.
-- Indicate when information may be incomplete or outdated.
+## Workflow
 
-Respond in the same language as the user.
+1. **Search**: Invoke `web_search_preview` with the user's query.
+2. **Evaluate sources**: Prefer the most recent and authoritative results.
+3. **Summarize**: Present findings clearly in the user's language.
+4. **Flag gaps**: Indicate when information may be incomplete or outdated.
 
----
+## Fallback
 
-## User Prompt Template
-
-Search for the most recent information about:
-
-{{topic}}
-
----
-
-## Fallback Behavior
-
-### On Tool Error: `web_search_preview_not_supported`
-
-⚠️ Your model is not able to use Web Search Preview tool.  
-I will answer based on my knowledge, **not real-time information**.
-
----
+If `web_search_preview` is unavailable (model does not support it), respond using internal knowledge and clearly state the answer is **not based on real-time data**.
 
 ## Notes
 
-- This skill prioritizes live web data.
-- Requires model support `web_search_preview` tool.
+- Always attempt `web_search_preview` before falling back to internal knowledge.
+- Respond in the same language as the user.
